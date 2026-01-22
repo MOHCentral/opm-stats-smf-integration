@@ -1,0 +1,39 @@
+# User Configuration & Secrets (CRITICAL)
+smf-mohaa/Settings.php
+smf-mohaa/Settings_bak.php
+smf-mohaa/db_last_error.php
+smf-mohaa/install.php
+
+# Cache & Temporary Files
+smf-mohaa/cache/*
+!smf-mohaa/cache/index.php
+!smf-mohaa/cache/.htaccess
+
+# Uploads & Attachments
+smf-mohaa/attachments/*
+!smf-mohaa/attachments/index.php
+!smf-mohaa/attachments/.htaccess
+
+smf-mohaa/avatars/*
+!smf-mohaa/avatars/index.php
+!smf-mohaa/avatars/default
+!smf-mohaa/avatars/actor.png
+!smf-mohaa/avatars/system.png
+
+smf-mohaa/custom_avatar/*
+!smf-mohaa/custom_avatar/index.php
+
+# Packages (Mods)
+# You might want to track this if you are actively modding standard files, 
+# but usually installed packages are ignored if you have the zips.
+# smf-mohaa/Packages/*
+# !smf-mohaa/Packages/index.php
+
+# Logs
+*.log
+error_log
+
+# OS & IDE
+.DS_Store
+.vscode/
+.idea/
