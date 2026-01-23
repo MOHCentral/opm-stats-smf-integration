@@ -17,13 +17,22 @@ This integration allows your SMF forum to become the frontend for the stats syst
 
 ## Installation
 
-1.  **Prerequisites**:
-    -   SMF 2.1+ installed.
-    -   Access to the OpenMOHAA Stats API (running separately).
+### 1. Build the Package
+We provide a utility script to bundle the plugin into a format compatible with the SMF Package Manager.
 
-2.  **Plugin Installation**:
-    -   The core logic is located in `smf-plugins/mohaa_stats_core`.
-    -   Copy the contents of `smf-plugins` to your SMF `Sources/` and `Themes/` directories as appropriate (detailed installer coming soon).
+1.  Run the build script from the project root:
+    ```bash
+    ./build_smf_package.sh
+    ```
+2.  This will create a file at `release/mohaa_stats_core_v1.0.0.zip`.
+
+### 2. Install via SMF Admin Panel
+1.  Log in to your SMF Forum as Administrator.
+2.  Go to **Admin** > **Package Manager** > **Download Packages**.
+3.  Scroll to the bottom to **Upload a Package**.
+4.  Upload the `mohaa_stats_core_v1.0.0.zip` file.
+5.  Click **Install Mod** and follow the prompts.
+    *   This will automatically install the database tables and default configuration.
 
 ## Configuration
 
