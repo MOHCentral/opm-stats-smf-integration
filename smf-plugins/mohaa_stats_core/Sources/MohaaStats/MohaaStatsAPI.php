@@ -170,10 +170,14 @@ class MohaaStatsAPIClient
             'kills', 'deaths', 'count', 'limit', 'offset', 'total', 'page',
             'rank', 'score', 'wins', 'losses', 'draws', 'shots', 'hits', 'headshots',
             'rounds', 'time_played', 'assist', 'assists', 'suicides', 'team_kills',
-            'expires_in', 'ttl', 'forum_user_id', 'cache_time', 'start_time', 'end_time'
+            'expires_in', 'ttl', 'forum_user_id', 'cache_time', 'start_time', 'end_time',
+            'points', 'rounds_played', 'flags_captured', 'obj_returned', 'obj_stolen'
         ];
-        $floatKeys = ['accuracy', 'kdr', 'wl_ratio', 'kd_ratio', 'damage', 'percent'];
-        $boolKeys = ['is_active', 'success', 'count_only', 'online'];
+        $floatKeys = [
+            'accuracy', 'kdr', 'wl_ratio', 'kd_ratio', 'damage', 'percent',
+            'spm', 'kpm', 'win_loss_ratio', 'score_per_minute'
+        ];
+        $boolKeys = ['is_active', 'success', 'count_only', 'online', 'is_online', 'is_vip', 'verified'];
 
         foreach ($data as $key => $value) {
             if (is_array($value)) {
