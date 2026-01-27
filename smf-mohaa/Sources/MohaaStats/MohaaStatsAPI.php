@@ -16,11 +16,14 @@ class MohaaStatsAPIClient
     public function __construct()
     {
         global $modSettings;
-        // Default to localhost for local dev (Apache), use modSettings override for Docker
-        $this->baseUrl = $modSettings['mohaa_stats_api_url'] ?? 'http://localhost:8080';
+        // Priority: modSettings > environment > default
+        // Docker: Use MOHAA_API_URL env var (internal network: http://mohaa-api:8080)
+        // Local: Use modSettings or default to localhost
+        $envApiUrl = getenv('MOHAA_API_URL') ?: null;
+        $this->baseUrl = $modSettings['mohaa_stats_api_url'] ?? $envApiUrl ?? 'http://localhost:8080';
         $this->serverToken = $modSettings['mohaa_stats_server_token'] ?? '';
         $this->cacheDuration = (int)($modSettings['mohaa_stats_cache_duration'] ?? 60);
-        $this->timeout = (int)($modSettings['mohaa_stats_api_timeout'] ?? 3);
+        $this->timeout = (int)($modSettings['mohaa_stats_api_timeout'] ?? 5);
     }
     
     public function getMultiple(array $requests): array
