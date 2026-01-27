@@ -120,14 +120,14 @@ class MohaaStatsAPIClient
     public function clearCache(): void { clean_cache('mohaa_api_'); }
     public function getGlobalStats(): ?array { return $this->get('/stats/global'); }
     public function getLeaderboard(string $stat = 'kills', int $limit = 25, int $offset = 0, string $period = 'all'): ?array { return $this->get('/stats/leaderboard/global', ['stat'=>$stat,'limit'=>$limit,'offset'=>$offset,'period'=>$period]); }
-    public function getLeaderboardCount(string $stat = 'kills', string $period = 'all'): int { $data = $this->get('/stats/leaderboard/global', ['stat'=>$stat,'period'=>$period,'count_only'=>true]); return $data['total'] ?? 0; }
+    public function getLeaderboardCount(string $stat = 'kills', string $period = 'all'): int { $data = $this->get('/stats/leaderboard/global', ['stat'=>$stat,'period'=>$period,'count_only'=>true]); return (int)($data['total'] ?? 0); }
     public function getPlayerStats(string $guid): ?array { return $this->get('/stats/player/' . urlencode($guid)); }
     public function getPlayerDeepStats(string $guid): ?array { return $this->get('/stats/player/' . urlencode($guid) . '/deep'); }
     public function getPlayerWeapons(string $guid): ?array { return $this->get('/stats/player/' . urlencode($guid) . '/weapons'); }
     public function getPlayerMatches(string $guid, int $limit = 10, int $offset = 0): ?array { return $this->get('/stats/player/' . urlencode($guid) . '/matches', ['limit'=>$limit,'offset'=>$offset]); }
     public function getPlayerAchievements(string $guid): ?array { return $this->get('/achievements/player/' . urlencode($guid)); }
     public function getRecentMatches(int $limit = 20, int $offset = 0): ?array { return $this->get('/stats/matches', ['limit'=>$limit,'offset'=>$offset]); }
-    public function getMatchCount(): int { $data = $this->get('/stats/matches', ['count_only'=>true]); return $data['total'] ?? 0; }
+    public function getMatchCount(): int { $data = $this->get('/stats/matches', ['count_only'=>true]); return (int)($data['total'] ?? 0); }
     public function getMatchDetails(string $matchId): ?array { return $this->get('/stats/match/' . urlencode($matchId)); }
     public function getLiveMatches(): ?array { $orig = $this->cacheDuration; $this->cacheDuration = 10; $data = $this->get('/stats/live/matches'); $this->cacheDuration = $orig; return $data; }
     public function getMapStats(): ?array { return $this->get('/stats/maps'); }

@@ -234,10 +234,10 @@ function MohaaStats_MainPage(): void
     $api = new MohaaStatsAPIClient();
     
     $context['mohaa_stats'] = [
-        'global' => $api->getGlobalStats(),
-        'top_players' => $api->getLeaderboard('kills', 10),
-        'recent_matches' => $api->getRecentMatches(5),
-        'live_matches' => $api->getLiveMatches(),
+        'global' => $api->getGlobalStats() ?? [],
+        'top_players' => $api->getLeaderboard('kills', 10) ?? ['players' => []],
+        'recent_matches' => $api->getRecentMatches(5) ?? ['list' => []],
+        'live_matches' => $api->getLiveMatches() ?? [],
     ];
 }
 
@@ -251,7 +251,7 @@ function MohaaStats_Leaderboards(): void
     if (empty($_GET['stat']) && empty($_GET['start'])) {
         $context['page_title'] = $txt['mohaa_leaderboard_dashboard'] ?? 'Competitive Dashboard';
         $context['sub_template'] = 'mohaa_stats_dashboard';
-        $context['mohaa_dashboard_cards'] = $api->getLeaderboardCards();
+        $context['mohaa_dashboard_cards'] = $api->getLeaderboardCards() ?? [];
         return;
     }
     
@@ -266,13 +266,13 @@ function MohaaStats_Leaderboards(): void
     $api = new MohaaStatsAPIClient();
     
     // API returns {"players": [...], "total": N, "page": N}
-    $apiResponse = $api->getLeaderboard($stat, $limit, $page, $period);
+    $apiResponse = $api->getLeaderboard($stat, $limit, $page, $period) ?? [];
     
     $context['mohaa_leaderboard'] = [
         'stat' => $stat,
         'period' => $period,
         'players' => $apiResponse['players'] ?? [],
-        'total' => $apiResponse['total'] ?? 0,
+        'total' => (int)($apiResponse['total'] ?? 0),
     ];
     
     // Pagination
@@ -370,7 +370,7 @@ function MohaaStats_Matches(): void
     $api = new MohaaStatsAPIClient();
     
     $context['mohaa_matches'] = [
-        'list' => $api->getRecentMatches($limit, $page),
+        'list' => $api->getRecentMatches($limit, $page) ?? [],
         'total' => $api->getMatchCount(),
     ];
     
@@ -406,8 +406,8 @@ function MohaaStats_MatchDetail(): void
     
     // Fetch visual heatmap data separately
     $match['heatmap_data'] = [
-        'kills' => $api->getMatchHeatmap($matchId, 'kills'),
-        'deaths' => $api->getMatchHeatmap($matchId, 'deaths')
+        'kills' => $api->getMatchHeatmap($matchId, 'kills') ?? [],
+        'deaths' => $api->getMatchHeatmap($matchId, 'deaths') ?? []
     ];
     
     $context['page_title'] = sprintf($txt['mohaa_match_title'], $match['info']['map_name'] ?? 'Unknown');
@@ -427,7 +427,7 @@ function MohaaStats_Maps(): void
     $context['sub_template'] = 'mohaa_maps';
     
     $api = new MohaaStatsAPIClient();
-    $context['mohaa_maps'] = $api->getMapStats();
+    $context['mohaa_maps'] = $api->getMapStats() ?? [];
 }
 
 /**
@@ -457,8 +457,8 @@ function MohaaStats_MapDetail(): void
     
     $context['mohaa_map'] = [
         'info' => $map,
-        'heatmap_kills' => $api->getMapHeatmap($mapId, 'kills'),
-        'heatmap_deaths' => $api->getMapHeatmap($mapId, 'deaths'),
+        'heatmap_kills' => $api->getMapHeatmap($mapId, 'kills') ?? [],
+        'heatmap_deaths' => $api->getMapHeatmap($mapId, 'deaths') ?? [],
     ];
 }
 
@@ -473,7 +473,7 @@ function MohaaStats_Live(): void
     $context['sub_template'] = 'mohaa_live';
     
     $api = new MohaaStatsAPIClient();
-    $context['mohaa_live_matches'] = $api->getLiveMatches();
+    $context['mohaa_live_matches'] = $api->getLiveMatches() ?? [];
 }
 
 /**
@@ -604,9 +604,9 @@ function MohaaStats_WeaponLeaderboard(): void
     $api = new MohaaStatsAPIClient();
     
     $context['mohaa_weapon'] = $weapon;
-    $context['mohaa_weapons_list'] = $api->getWeaponsList();
-    $context['mohaa_weapon_data'] = $api->getWeaponStats($weapon);
-    $context['mohaa_weapon_leaderboard'] = $api->getWeaponLeaderboard($weapon, 25);
+    $context['mohaa_weapons_list'] = $api->getWeaponsList() ?? [];
+    $context['mohaa_weapon_data'] = $api->getWeaponStats($weapon) ?? [];
+    $context['mohaa_weapon_leaderboard'] = $api->getWeaponLeaderboard($weapon, 25) ?? [];
 }
 
 /**
@@ -624,11 +624,11 @@ function MohaaStats_MapLeaderboard(): void
     $api = new MohaaStatsAPIClient();
     
     $context['mohaa_map'] = $map;
-    $context['mohaa_maps_list'] = $api->getMapsList();
+    $context['mohaa_maps_list'] = $api->getMapsList() ?? [];
     
     if (!empty($map)) {
-        $context['mohaa_map_data'] = $api->getMapDetails($map);
-        $context['mohaa_map_leaderboard'] = $api->getMapLeaderboard($map, 25);
+        $context['mohaa_map_data'] = $api->getMapDetails($map) ?? [];
+        $context['mohaa_map_leaderboard'] = $api->getMapLeaderboard($map, 25) ?? [];
     } else {
         $context['mohaa_map_data'] = [];
         $context['mohaa_map_leaderboard'] = [];
