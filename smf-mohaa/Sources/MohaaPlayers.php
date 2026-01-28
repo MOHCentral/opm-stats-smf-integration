@@ -69,14 +69,21 @@ function MohaaStats_Router(): void
 }
 
 /**
- * Placeholder for live stats (to be implemented)
+ * Live matches page - shows current active games
  */
 function MohaaPlayers_LiveStats(): void
 {
     global $context, $txt;
     loadTemplate('MohaaStats');
-    $context['page_title'] = $txt['mohaa_live'] ?? 'Live Stats';
-    $context['sub_template'] = 'mohaa_live_stats';
+    loadLanguage('MohaaStats');
+    $context['page_title'] = $txt['mohaa_live_matches'] ?? 'Live Matches';
+    $context['sub_template'] = 'mohaa_live';
+    
+    require_once(__DIR__ . '/MohaaStats/MohaaStatsAPI.php');
+    $api = new MohaaStatsAPIClient();
+    
+    // Fetch active matches (template expects mohaa_live_matches)
+    $context['mohaa_live_matches'] = $api->getLiveMatches() ?? [];
 }
 
 /**
