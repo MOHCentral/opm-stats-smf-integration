@@ -87,36 +87,51 @@ function MohaaPlayers_LiveStats(): void
 }
 
 /**
- * Placeholder for maps (to be implemented)
+ * Maps page - shows all maps with stats
  */
 function MohaaPlayers_Maps(): void
 {
     global $context, $txt;
     loadTemplate('MohaaStats');
+    loadLanguage('MohaaStats');
     $context['page_title'] = $txt['mohaa_maps'] ?? 'Maps';
     $context['sub_template'] = 'mohaa_maps';
+    
+    require_once(__DIR__ . '/MohaaStats/MohaaStatsAPI.php');
+    $api = new MohaaStatsAPIClient();
+    $context['mohaa_maps'] = $api->getMaps() ?? [];
 }
 
 /**
- * Placeholder for weapons (to be implemented)
+ * Weapons page - shows all weapons with stats
  */
 function MohaaPlayers_Weapons(): void
 {
     global $context, $txt;
     loadTemplate('MohaaStats');
+    loadLanguage('MohaaStats');
     $context['page_title'] = $txt['mohaa_weapons'] ?? 'Weapons';
     $context['sub_template'] = 'mohaa_weapons';
+    
+    require_once(__DIR__ . '/MohaaStats/MohaaStatsAPI.php');
+    $api = new MohaaStatsAPIClient();
+    $context['mohaa_weapons'] = $api->getWeapons() ?? [];
 }
 
 /**
- * Placeholder for game types (to be implemented)
+ * Game types page - shows all game modes with stats
  */
 function MohaaPlayers_GameTypes(): void
 {
     global $context, $txt;
     loadTemplate('MohaaStats');
-    $context['page_title'] = $txt['mohaa_gametypes'] ?? 'Game Types';
+    loadLanguage('MohaaStats');
+    $context['page_title'] = $txt['mohaa_gametypes'] ?? 'Game Modes';
     $context['sub_template'] = 'mohaa_gametypes';
+    
+    require_once(__DIR__ . '/MohaaStats/MohaaStatsAPI.php');
+    $api = new MohaaStatsAPIClient();
+    $context['mohaa_gametypes'] = $api->getGameTypes() ?? [];
 }
 
 /**
