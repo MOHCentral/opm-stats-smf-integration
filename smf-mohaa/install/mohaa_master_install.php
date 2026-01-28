@@ -44,8 +44,17 @@ if (empty($db_name)) {
 }
 
 // Ensure database is selected - fixes "No database selected" error
+// SMF 2.1 may not auto-select the database in all scenarios
 if (!empty($db_connection) && !empty($db_name)) {
-    @mysqli_select_db($db_connection, $db_name);
+    // Try to select database using mysqli
+    if (is_object($db_connection) || is_resource($db_connection)) {
+        @mysqli_select_db($db_connection, $db_name);
+    }
+}
+
+// Double-check by running a USE query through SMF's abstraction
+if (!empty($smcFunc['db_query']) && !empty($db_name)) {
+    @$smcFunc['db_query']('', "USE `$db_name`", []);
 }
 
 // Load database packages functions (db_create_table, db_add_column, etc.)
@@ -292,10 +301,10 @@ $tables = [
  * Get existing columns for a table
  */
 function getExistingColumns($tableName) {
-    global $smcFunc, $db_prefix;
+    global $smcFunc, $db_prefix, $db_name;
     
     $columns = [];
-    $result = $smcFunc['db_query']('', "SHOW COLUMNS FROM {db_prefix}$tableName", []);
+    $result = $smcFunc['db_query']('', "SHOW COLUMNS FROM `{$db_name}`.{db_prefix}$tableName", []);
     while ($row = $smcFunc['db_fetch_assoc']($result)) {
         $columns[$row['Field']] = $row;
     }
@@ -307,9 +316,9 @@ function getExistingColumns($tableName) {
  * Check if table exists
  */
 function tableExists($tableName) {
-    global $smcFunc, $db_prefix;
+    global $smcFunc, $db_prefix, $db_name;
     
-    $result = $smcFunc['db_query']('', "SHOW TABLES LIKE '{db_prefix}$tableName'", []);
+    $result = $smcFunc['db_query']('', "SHOW TABLES FROM `{$db_name}` LIKE '{db_prefix}$tableName'", []);
     $exists = $smcFunc['db_num_rows']($result) > 0;
     $smcFunc['db_free_result']($result);
     return $exists;
