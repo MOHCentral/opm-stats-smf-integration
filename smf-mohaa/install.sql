@@ -20,6 +20,8 @@ DELETE FROM smf_settings WHERE variable = 'integrate_menu_buttons' AND value LIK
 DELETE FROM smf_settings WHERE variable = 'integrate_admin_areas' AND value LIKE '%MohaaStats%';
 
 -- Insert integration hooks
+-- NOTE: API URL should NOT include /api/v1 - PHP adds it automatically
+-- Set the actual URL via environment variable MOHAA_API_URL or Admin settings
 INSERT INTO smf_settings (variable, value) VALUES 
     ('integrate_pre_include', '$sourcedir/MohaaStats/MohaaStats.php'),
     ('integrate_actions', 'MohaaStats_Actions'),
@@ -27,7 +29,7 @@ INSERT INTO smf_settings (variable, value) VALUES
     ('integrate_admin_areas', 'MohaaStats_AdminAreas'),
     ('mohaa_stats_installed', '1'),
     ('mohaa_stats_enabled', '1'),
-    ('mohaa_stats_api_url', 'http://77.42.64.214:8084/api/v1'),
+    ('mohaa_stats_api_url', 'http://localhost:8084'),
     ('mohaa_stats_cache_ttl', '300');
 
 -- =============================================================================
