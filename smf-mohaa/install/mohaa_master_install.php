@@ -418,8 +418,9 @@ function buildColumnSQL($name, $def) {
     return $sql;
 }
 
-// Force mode - drop and recreate all tables
-$forceRebuild = isset($_GET['force']) || isset($_SERVER['argv']) && in_array('--force', $_SERVER['argv']);
+// DEV MODE: Always drop and recreate all tables for clean slate
+// Set ?skip_force=1 to only add missing columns instead
+$forceRebuild = !isset($_GET['skip_force']);
 
 // Process each table
 foreach ($tables as $tableName => $tableSpec) {
