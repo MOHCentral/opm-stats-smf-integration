@@ -68,7 +68,7 @@ if (!empty($sourcedir) && file_exists($sourcedir . '/DbPackages-mysql.php')) {
     db_packages_init();
 }
 
-// Installer version - increment when schema changes
+// Installer version - increment when schema changes 
 define('MOHAA_INSTALLER_VERSION', '2.0.1');
 
 // Output header
