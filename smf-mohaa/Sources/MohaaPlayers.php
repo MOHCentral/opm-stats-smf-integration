@@ -19,6 +19,7 @@ function MohaaPlayers_Actions(array &$actions): void
 {
     $actions['mohaaplayer'] = ['MohaaPlayers.php', 'MohaaPlayers_ViewPlayer'];
     $actions['mohaaplayers'] = ['MohaaPlayers.php', 'MohaaPlayers_Main']; // Main entry with sub-actions
+    $actions['mohaastats'] = ['MohaaPlayers.php', 'MohaaStats_Router']; // Stats pages with sub-actions
     $actions['mohaadashboard'] = ['MohaaPlayers.php', 'MohaaPlayers_Dashboard'];
     $actions['mohaawarroom'] = ['MohaaPlayers.php', 'MohaaPlayers_Dashboard']; // Alias for war room
     $actions['mohaaleaderboard'] = ['MohaaPlayers.php', 'MohaaPlayers_Leaderboard'];
@@ -27,6 +28,99 @@ function MohaaPlayers_Actions(array &$actions): void
     $actions['mohaaidentity'] = ['MohaaPlayers.php', 'MohaaPlayers_IdentityRedirect'];
     $actions['mohaalazyload'] = ['MohaaPlayers.php', 'MohaaPlayers_LazyLoadTab'];
     $actions['mohaadrilldown'] = ['MohaaPlayers.php', 'MohaaPlayers_DrillDown'];
+}
+
+/**
+ * Router for ?action=mohaastats with sub-actions
+ */
+function MohaaStats_Router(): void
+{
+    $sa = isset($_GET['sa']) ? $_GET['sa'] : 'leaderboards';
+    
+    switch ($sa) {
+        case 'leaderboards':
+            MohaaPlayers_Leaderboard();
+            break;
+        case 'battles':
+            MohaaPlayers_Matches();
+            break;
+        case 'live':
+            MohaaPlayers_LiveStats();
+            break;
+        case 'maps':
+            MohaaPlayers_Maps();
+            break;
+        case 'weapons':
+            MohaaPlayers_Weapons();
+            break;
+        case 'gametypes':
+            MohaaPlayers_GameTypes();
+            break;
+        case 'comparison':
+            MohaaPlayers_Compare();
+            break;
+        case 'predictions':
+            MohaaPlayers_Predictions();
+            break;
+        default:
+            MohaaPlayers_Leaderboard();
+            break;
+    }
+}
+
+/**
+ * Placeholder for live stats (to be implemented)
+ */
+function MohaaPlayers_LiveStats(): void
+{
+    global $context, $txt;
+    loadTemplate('MohaaStats');
+    $context['page_title'] = $txt['mohaa_live'] ?? 'Live Stats';
+    $context['sub_template'] = 'mohaa_live_stats';
+}
+
+/**
+ * Placeholder for maps (to be implemented)
+ */
+function MohaaPlayers_Maps(): void
+{
+    global $context, $txt;
+    loadTemplate('MohaaStats');
+    $context['page_title'] = $txt['mohaa_maps'] ?? 'Maps';
+    $context['sub_template'] = 'mohaa_maps';
+}
+
+/**
+ * Placeholder for weapons (to be implemented)
+ */
+function MohaaPlayers_Weapons(): void
+{
+    global $context, $txt;
+    loadTemplate('MohaaStats');
+    $context['page_title'] = $txt['mohaa_weapons'] ?? 'Weapons';
+    $context['sub_template'] = 'mohaa_weapons';
+}
+
+/**
+ * Placeholder for game types (to be implemented)
+ */
+function MohaaPlayers_GameTypes(): void
+{
+    global $context, $txt;
+    loadTemplate('MohaaStats');
+    $context['page_title'] = $txt['mohaa_gametypes'] ?? 'Game Types';
+    $context['sub_template'] = 'mohaa_gametypes';
+}
+
+/**
+ * Placeholder for predictions (to be implemented)
+ */
+function MohaaPlayers_Predictions(): void
+{
+    global $context, $txt;
+    loadTemplate('MohaaPredictions');
+    $context['page_title'] = $txt['mohaa_predictions'] ?? 'Predictions';
+    $context['sub_template'] = 'mohaa_predictions';
 }
 
 /**
@@ -788,30 +882,133 @@ function MohaaPlayers_Leaderboard(): void
 {
     global $context, $txt, $scripturl;
     
-    loadTemplate('MohaaStats');
+    loadTemplate('MohaaStatsLeaderboard');
     loadLanguage('MohaaStats');
     
-    $context['page_title'] = $txt['mohaa_leaderboards'] ?? 'Leaderboards';
-    $context['sub_template'] = 'mohaa_leaderboards';
-    
-    // Get leaderboard stat type from URL (default: kills)
-    $stat = isset($_GET['stat']) ? trim($_GET['stat']) : 'kills';
-    $validStats = ['kills', 'deaths', 'kd_ratio', 'headshots', 'accuracy', 'playtime', 'wins'];
-    if (!in_array($stat, $validStats)) {
-        $stat = 'kills';
-    }
+    // Check if a specific stat is requested (drill-down view)
+    $stat = isset($_GET['stat']) ? trim($_GET['stat']) : null;
+    $validStats = [
+        // Combat
+        'kills', 'deaths', 'kd_ratio', 'headshots', 'accuracy', 'shots_fired', 'damage',
+        // Special Kills
+        'bash_kills', 'grenade_kills', 'roadkills', 'telefrags', 'crushed', 'teamkills', 'suicides',
+        // Weapons
+        'reloads', 'weapon_swaps', 'no_ammo', 'looter',
+        // Movement
+        'distance', 'sprinted', 'swam', 'driven', 'jumps', 'crouch_time', 'prone_time', 'ladders',
+        // Survival
+        'health_picked', 'ammo_picked', 'armor_picked', 'items_picked',
+        // Results
+        'wins', 'team_wins', 'ffa_wins', 'losses', 'objectives', 'rounds', 'playtime', 'games',
+    ];
     
     require_once(__DIR__ . '/MohaaStats/MohaaStatsAPI.php');
     $api = new MohaaStatsAPIClient();
     
-    // Fetch leaderboard data
-    $leaderboard = $api->getGlobalLeaderboard($stat, 50) ?? [];
-    
-    $context['mohaa_leaderboard'] = [
-        'stat' => $stat,
-        'valid_stats' => $validStats,
-        'players' => $leaderboard,
-    ];
+    if ($stat !== null && in_array($stat, $validStats)) {
+        // Drill-down: Show single leaderboard with full list
+        $context['page_title'] = ($txt['mohaa_stat_' . $stat] ?? ucfirst($stat)) . ' Leaderboard';
+        $context['sub_template'] = 'mohaa_leaderboard_detail';
+        
+        $period = isset($_GET['period']) ? trim($_GET['period']) : 'all';
+        $validPeriods = ['all', 'month', 'week', 'day'];
+        if (!in_array($period, $validPeriods)) {
+            $period = 'all';
+        }
+        
+        $leaderboard = $api->getGlobalLeaderboard($stat, 100) ?? [];
+        
+        $context['mohaa_leaderboard'] = [
+            'stat' => $stat,
+            'period' => $period,
+            'valid_stats' => $validStats,
+            'valid_periods' => $validPeriods,
+            'players' => $leaderboard,
+        ];
+    } else {
+        // Dashboard: Show multiple leaderboard widgets
+        $context['page_title'] = $txt['mohaa_leaderboards'] ?? 'Leaderboards';
+        $context['sub_template'] = 'mohaa_leaderboards_dashboard';
+        
+        // All 38 leaderboard categories organized by group
+        $categories = [
+            // Combat - Lethality
+            'kills' => ['icon' => '🗡️', 'title' => 'Kills', 'group' => 'Combat'],
+            'deaths' => ['icon' => '🪦', 'title' => 'Deaths', 'group' => 'Combat'],
+            'kd_ratio' => ['icon' => '⚖️', 'title' => 'K/D Ratio', 'group' => 'Combat'],
+            'headshots' => ['icon' => '🤯', 'title' => 'Headshots', 'group' => 'Combat'],
+            'accuracy' => ['icon' => '🎯', 'title' => 'Accuracy', 'group' => 'Combat'],
+            'shots_fired' => ['icon' => '💥', 'title' => 'Trigger Happy', 'group' => 'Combat'],
+            'damage' => ['icon' => '🩸', 'title' => 'Damage Dealt', 'group' => 'Combat'],
+            
+            // Combat - Special Kills
+            'bash_kills' => ['icon' => '🔨', 'title' => 'Executioner', 'group' => 'Special'],
+            'grenade_kills' => ['icon' => '💣', 'title' => 'Grenadier', 'group' => 'Special'],
+            'roadkills' => ['icon' => '🚗', 'title' => 'Road Rage', 'group' => 'Special'],
+            'telefrags' => ['icon' => '🌌', 'title' => 'Telefrags', 'group' => 'Special'],
+            'crushed' => ['icon' => '🥞', 'title' => 'Crushed', 'group' => 'Special'],
+            'teamkills' => ['icon' => '🔪', 'title' => 'Betrayals', 'group' => 'Special'],
+            'suicides' => ['icon' => '💀', 'title' => 'Suicides', 'group' => 'Special'],
+            
+            // Weapon Handling
+            'reloads' => ['icon' => '🔄', 'title' => 'Reloader', 'group' => 'Weapons'],
+            'weapon_swaps' => ['icon' => '🔀', 'title' => 'Fickle', 'group' => 'Weapons'],
+            'no_ammo' => ['icon' => '⛽', 'title' => 'Empty Clip', 'group' => 'Weapons'],
+            'looter' => ['icon' => '🎒', 'title' => 'Looter', 'group' => 'Weapons'],
+            
+            // Movement
+            'distance' => ['icon' => '🏃', 'title' => 'Marathon Man', 'group' => 'Movement'],
+            'sprinted' => ['icon' => '⚡', 'title' => 'Sprinter', 'group' => 'Movement'],
+            'swam' => ['icon' => '🏊', 'title' => 'Swimmer', 'group' => 'Movement'],
+            'driven' => ['icon' => '🚙', 'title' => 'Driver', 'group' => 'Movement'],
+            'jumps' => ['icon' => '🐇', 'title' => 'Bunny Hopper', 'group' => 'Movement'],
+            'crouch_time' => ['icon' => '🦵', 'title' => 'Tactical Crouch', 'group' => 'Movement'],
+            'prone_time' => ['icon' => '⛺', 'title' => 'Camper', 'group' => 'Movement'],
+            'ladders' => ['icon' => '🧗', 'title' => 'Mountaineer', 'group' => 'Movement'],
+            
+            // Survival / Pickups
+            'health_picked' => ['icon' => '🍗', 'title' => 'Glutton', 'group' => 'Survival'],
+            'ammo_picked' => ['icon' => '📦', 'title' => 'Hoarder', 'group' => 'Survival'],
+            'armor_picked' => ['icon' => '🛡️', 'title' => 'Tank', 'group' => 'Survival'],
+            'items_picked' => ['icon' => '🗑️', 'title' => 'Scavenger', 'group' => 'Survival'],
+            
+            // Game Results
+            'wins' => ['icon' => '🏆', 'title' => 'Wins', 'group' => 'Results'],
+            'team_wins' => ['icon' => '🚩', 'title' => 'Team Wins', 'group' => 'Results'],
+            'ffa_wins' => ['icon' => '⚔️', 'title' => 'FFA Wins', 'group' => 'Results'],
+            'losses' => ['icon' => '☠️', 'title' => 'Losses', 'group' => 'Results'],
+            'objectives' => ['icon' => '🎯', 'title' => 'Objectives', 'group' => 'Results'],
+            'rounds' => ['icon' => '⏳', 'title' => 'Rounds Played', 'group' => 'Results'],
+            'playtime' => ['icon' => '⏱️', 'title' => 'Playtime', 'group' => 'Results'],
+            'games' => ['icon' => '🎮', 'title' => 'Games Finished', 'group' => 'Results'],
+        ];
+        
+        // Build parallel API requests for all leaderboards
+        $requests = [];
+        foreach ($categories as $key => $meta) {
+            $requests[$key] = [
+                'endpoint' => '/leaderboard/' . $key,
+                'params' => ['limit' => 5],
+            ];
+        }
+        
+        // Fetch all leaderboards in parallel (much faster than sequential)
+        $apiResults = $api->getMultiple($requests);
+        
+        // Merge API results with category metadata
+        $leaderboards = [];
+        foreach ($categories as $key => $meta) {
+            $data = $apiResults[$key] ?? [];
+            $leaderboards[$key] = [
+                'icon' => $meta['icon'],
+                'title' => $meta['title'],
+                'group' => $meta['group'],
+                'players' => $data['players'] ?? [],
+            ];
+        }
+        
+        $context['mohaa_leaderboards'] = $leaderboards;
+    }
 }
 
 /**

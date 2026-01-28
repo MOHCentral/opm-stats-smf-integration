@@ -7,6 +7,228 @@
  */
 
 /**
+ * Leaderboards Dashboard - Shows multiple leaderboard widgets
+ */
+function template_mohaa_leaderboards_dashboard()
+{
+    global $context, $scripturl, $txt, $settings;
+    
+    $leaderboards = $context['mohaa_leaderboards'] ?? [];
+    
+    echo '
+    <style>
+        .leaderboards-dashboard {
+            padding: 20px 0;
+        }
+        .leaderboards-header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            color: white;
+            text-align: center;
+        }
+        .leaderboards-header h1 {
+            margin: 0 0 10px 0;
+            font-size: 2.2em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .leaderboards-header p {
+            margin: 0;
+            opacity: 0.8;
+            font-size: 1.1em;
+        }
+        .leaderboards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .leaderboard-widget {
+            background: #fff;
+            border: 1px solid #e1e4e8;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .leaderboard-widget:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+        }
+        .widget-header {
+            background: linear-gradient(to right, #f8f9fa, #fff);
+            padding: 15px 20px;
+            border-bottom: 1px solid #e1e4e8;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .widget-icon {
+            font-size: 1.8em;
+        }
+        .widget-title {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: #2c3e50;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .widget-body {
+            padding: 0;
+        }
+        .widget-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .widget-list li {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .widget-list li:last-child {
+            border-bottom: none;
+        }
+        .widget-list .rank {
+            width: 30px;
+            font-weight: bold;
+            color: #7f8c8d;
+        }
+        .widget-list .rank-1 { color: #f1c40f; font-size: 1.2em; }
+        .widget-list .rank-2 { color: #95a5a6; font-size: 1.1em; }
+        .widget-list .rank-3 { color: #cd7f32; font-size: 1.05em; }
+        .widget-list .name {
+            flex: 1;
+            font-weight: 600;
+        }
+        .widget-list .name a {
+            color: #2980b9;
+            text-decoration: none;
+        }
+        .widget-list .name a:hover {
+            text-decoration: underline;
+        }
+        .widget-list .value {
+            font-weight: bold;
+            color: #27ae60;
+            font-size: 1.1em;
+        }
+        .widget-footer {
+            padding: 12px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e1e4e8;
+            text-align: center;
+        }
+        .widget-footer a {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .widget-footer a:hover {
+            color: #2980b9;
+        }
+        .empty-widget {
+            padding: 30px;
+            text-align: center;
+            color: #95a5a6;
+        }
+    </style>
+    
+    <div class="leaderboards-dashboard">
+        <div class="leaderboards-header">
+            <h1>🏆 Leaderboards</h1>
+            <p>Click any widget to view the full leaderboard</p>
+        </div>
+        
+        <div class="leaderboards-grid">';
+    
+    foreach ($leaderboards as $key => $data) {
+        $icon = $data['icon'] ?? '📊';
+        $title = $data['title'] ?? ucfirst($key);
+        $players = $data['players'] ?? [];
+        
+        echo '
+            <div class="leaderboard-widget">
+                <div class="widget-header">
+                    <span class="widget-icon">', $icon, '</span>
+                    <span class="widget-title">', htmlspecialchars($title), '</span>
+                </div>
+                <div class="widget-body">';
+        
+        if (!empty($players)) {
+            echo '
+                    <ul class="widget-list">';
+            
+            foreach (array_slice($players, 0, 5) as $i => $player) {
+                $rank = $i + 1;
+                $rankClass = $rank <= 3 ? ' rank-' . $rank : '';
+                $rankEmoji = '';
+                if ($rank === 1) $rankEmoji = '🥇';
+                elseif ($rank === 2) $rankEmoji = '🥈';
+                elseif ($rank === 3) $rankEmoji = '🥉';
+                else $rankEmoji = '#' . $rank;
+                
+                // Format value based on stat type
+                $value = $player[$key] ?? $player['value'] ?? $player['kills'] ?? 0;
+                if ($key === 'kd_ratio') {
+                    $value = number_format((float)$value, 2);
+                } elseif ($key === 'accuracy') {
+                    $value = number_format((float)$value, 1) . '%';
+                } elseif ($key === 'playtime') {
+                    $hours = floor($value / 3600);
+                    $mins = floor(($value % 3600) / 60);
+                    $value = $hours . 'h ' . $mins . 'm';
+                } else {
+                    $value = number_format((int)$value);
+                }
+                
+                echo '
+                        <li>
+                            <span class="rank', $rankClass, '">', $rankEmoji, '</span>
+                            <span class="name">
+                                <a href="', $scripturl, '?action=mohaastats;sa=player;guid=', urlencode($player['guid'] ?? ''), '">', 
+                                    htmlspecialchars($player['name'] ?? 'Unknown'), '
+                                </a>
+                            </span>
+                            <span class="value">', $value, '</span>
+                        </li>';
+            }
+            
+            echo '
+                    </ul>';
+        } else {
+            echo '
+                    <div class="empty-widget">No data yet</div>';
+        }
+        
+        echo '
+                </div>
+                <div class="widget-footer">
+                    <a href="', $scripturl, '?action=mohaastats;sa=leaderboards;stat=', $key, '">View Full Leaderboard →</a>
+                </div>
+            </div>';
+    }
+    
+    echo '
+        </div>
+    </div>';
+}
+
+/**
+ * Leaderboard Detail - Shows single stat leaderboard with full list
+ */
+function template_mohaa_leaderboard_detail()
+{
+    // Just call the existing detailed template
+    template_mohaa_stats_leaderboard();
+}
+
+/**
  * Main leaderboard template
  */
 function template_mohaa_stats_leaderboard()
