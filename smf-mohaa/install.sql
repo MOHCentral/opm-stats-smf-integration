@@ -28,11 +28,11 @@ INSERT INTO smf_settings (variable, value) VALUES
     ('integrate_admin_areas', 'MohaaTournaments.php|MohaaTournaments_AdminAreas')
 ON DUPLICATE KEY UPDATE value = VALUES(value);
 
--- Insert MOHAA settings
+-- Insert MOHAA settings (LOCAL DEV defaults - run install_portainer_patch.sql for production)
 INSERT INTO smf_settings (variable, value) VALUES 
     ('mohaa_stats_installed', '1'),
     ('mohaa_stats_enabled', '1'),
-    ('mohaa_stats_api_url', 'http://opm-stats-api:8080'),
+    ('mohaa_stats_api_url', 'http://localhost:8080'),
     ('mohaa_stats_cache_ttl', '300')
 ON DUPLICATE KEY UPDATE value = VALUES(value);
 
