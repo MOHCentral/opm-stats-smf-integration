@@ -587,7 +587,7 @@ function template_mohaa_link_identity()
                     <tr class="windowbg">
                         <td>', htmlspecialchars($identity['player_name']), '</td>
                         <td><code>', htmlspecialchars($identity['player_guid']), '</code></td>
-                        <td>', timeformat($identity['linked_date']), '</td>
+                        <td>', timeformat($identity['linked_at']), '</td>
                         <td>
                             <form action="', $scripturl, '?action=mohaastats;sa=link" method="post" style="display:inline;">
                                 <input type="hidden" name="action_type" value="unlink">

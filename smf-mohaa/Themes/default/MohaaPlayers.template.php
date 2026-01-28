@@ -471,7 +471,7 @@ function template_mohaa_profile_identity()
                 <tr class="windowbg">
                     <td><strong>', htmlspecialchars($identity['player_name']), '</strong></td>
                     <td><code>', htmlspecialchars(substr($identity['player_guid'], 0, 8)), '...</code></td>
-                    <td>', timeformat($identity['linked_date']), '</td>
+                    <td>', timeformat($identity['linked_at']), '</td>
                     <td>
                         <form method="post" action="', $scripturl, '?action=profile;area=mohaaidentity" style="display: inline;">
                             <input type="hidden" name="mohaa_action" value="unlink">

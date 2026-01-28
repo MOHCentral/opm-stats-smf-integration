@@ -84,7 +84,7 @@ class MohaaIdentityResolver
             SELECT player_guid
             FROM {db_prefix}mohaa_identities
             WHERE id_member = {int:member_id}
-            ORDER BY linked_date DESC',
+            ORDER BY linked_at DESC',
             [
                 'member_id' => $memberId,
             ]
@@ -223,7 +223,7 @@ class MohaaIdentityResolver
                 i.id_member,
                 i.player_guid,
                 i.player_name AS last_known_name,
-                i.linked_date,
+                i.linked_at,
                 i.verified,
                 m.member_name,
                 m.real_name,
@@ -249,7 +249,7 @@ class MohaaIdentityResolver
             'guid' => $row['player_guid'],
             'smf_id' => (int)$row['id_member'],
             'last_known_name' => $row['last_known_name'],
-            'linked_date' => $row['linked_date'],
+            'linked_at' => $row['linked_at'],
             'verified' => (bool)$row['verified'],
             'member_name' => $row['member_name'],
             'real_name' => $row['real_name'],
@@ -302,7 +302,7 @@ class MohaaIdentityResolver
                 'player_guid' => 'string',
                 'id_member' => 'int',
                 'player_name' => 'string',
-                'linked_date' => 'int',
+                'linked_at' => 'int',
                 'verified' => 'int',
             ],
             [

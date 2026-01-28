@@ -449,7 +449,7 @@ function MohaaPlayers_GetLinkedGUID(int $memberId): ?string
         SELECT player_guid
         FROM {db_prefix}mohaa_identities
         WHERE id_member = {int:member}
-        ORDER BY linked_date DESC
+        ORDER BY linked_at DESC
         LIMIT 1',
         [
             'member' => $memberId,
@@ -495,10 +495,10 @@ function MohaaPlayers_GetAllIdentities(int $memberId): array
     $identities = [];
     
     $request = $smcFunc['db_query']('', '
-        SELECT id_identity, player_guid, player_name, linked_date
+        SELECT id_identity, player_guid, player_name, linked_at
         FROM {db_prefix}mohaa_identities
         WHERE id_member = {int:member}
-        ORDER BY linked_date DESC',
+        ORDER BY linked_at DESC',
         [
             'member' => $memberId,
         ]
@@ -561,7 +561,7 @@ function MohaaPlayers_LinkIdentity(int $memberId, string $guid, string $playerNa
             'id_member' => 'int',
             'player_guid' => 'string',
             'player_name' => 'string',
-            'linked_date' => 'int',
+            'linked_at' => 'int',
         ],
         [
             $memberId,

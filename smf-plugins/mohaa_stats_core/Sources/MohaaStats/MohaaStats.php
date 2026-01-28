@@ -553,10 +553,10 @@ function MohaaStats_GetUserIdentities(int $userId): array
     $identities = [];
     
     $request = $smcFunc['db_query']('', '
-        SELECT id_identity, player_guid, player_name, linked_date
+        SELECT id_identity, player_guid, player_name, linked_at
         FROM {db_prefix}mohaa_identities
         WHERE id_member = {int:member}
-        ORDER BY linked_date DESC',
+        ORDER BY linked_at DESC',
         [
             'member' => $userId,
         ]

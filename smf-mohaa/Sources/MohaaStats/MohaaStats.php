@@ -84,7 +84,7 @@ function MohaaStats_CreateTables(): void
                 id_member INT NOT NULL,
                 player_guid VARCHAR(64) NOT NULL UNIQUE,
                 player_name VARCHAR(100),
-                linked_date INT UNSIGNED DEFAULT 0,
+                linked_at INT UNSIGNED DEFAULT 0,
                 verified TINYINT(1) DEFAULT 0,
                 INDEX idx_member (id_member)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
@@ -731,10 +731,10 @@ function MohaaStats_GetUserIdentities(int $userId): array
     $identities = [];
     
     $request = $smcFunc['db_query']('', '
-        SELECT id_identity, player_guid, player_name, linked_date
+        SELECT id_identity, player_guid, player_name, linked_at
         FROM {db_prefix}mohaa_identities
         WHERE id_member = {int:member}
-        ORDER BY linked_date DESC',
+        ORDER BY linked_at DESC',
         [
             'member' => $userId,
         ]

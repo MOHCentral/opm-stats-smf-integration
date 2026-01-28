@@ -42,7 +42,7 @@ $tables[] = [
             'default' => '',
         ],
         [
-            'name' => 'linked_date',
+            'name' => 'linked_at',
             'type' => 'int',
             'size' => 10,
             'unsigned' => true,

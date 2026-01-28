@@ -145,7 +145,7 @@ $tables = [
             'id_member' => ['type' => 'mediumint', 'size' => 8, 'unsigned' => true, 'default' => 0],
             'player_guid' => ['type' => 'varchar', 'size' => 64, 'default' => ''],
             'player_name' => ['type' => 'varchar', 'size' => 255, 'default' => ''],
-            'linked_date' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
+            'linked_at' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
             'verified' => ['type' => 'tinyint', 'size' => 1, 'unsigned' => true, 'default' => 0],
         ],
         'indexes' => [
