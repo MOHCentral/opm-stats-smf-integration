@@ -21,6 +21,8 @@ function MohaaPlayers_Actions(array &$actions): void
     $actions['mohaaplayers'] = ['MohaaPlayers.php', 'MohaaPlayers_Main']; // Main entry with sub-actions
     $actions['mohaadashboard'] = ['MohaaPlayers.php', 'MohaaPlayers_Dashboard'];
     $actions['mohaawarroom'] = ['MohaaPlayers.php', 'MohaaPlayers_Dashboard']; // Alias for war room
+    $actions['mohaaleaderboard'] = ['MohaaPlayers.php', 'MohaaPlayers_Leaderboard'];
+    $actions['mohaamatches'] = ['MohaaPlayers.php', 'MohaaPlayers_Matches'];
     $actions['mohaacompare'] = ['MohaaPlayers.php', 'MohaaPlayers_Compare'];
     $actions['mohaaidentity'] = ['MohaaPlayers.php', 'MohaaPlayers_IdentityRedirect'];
     $actions['mohaalazyload'] = ['MohaaPlayers.php', 'MohaaPlayers_LazyLoadTab'];
@@ -781,6 +783,64 @@ function MohaaPlayers_LinkIdentity(int $memberId, string $guid, string $playerNa
     
     return $smcFunc['db_insert_id']('{db_prefix}mohaa_identities');
 }
+
+/**
+ * Global leaderboard page
+ */
+function MohaaPlayers_Leaderboard(): void
+{
+    global $context, $txt, $scripturl;
+    
+    loadTemplate('MohaaStats');
+    loadLanguage('MohaaStats');
+    
+    $context['page_title'] = $txt['mohaa_leaderboards'] ?? 'Leaderboards';
+    $context['sub_template'] = 'mohaa_leaderboards';
+    
+    // Get leaderboard stat type from URL (default: kills)
+    $stat = isset($_GET['stat']) ? trim($_GET['stat']) : 'kills';
+    $validStats = ['kills', 'deaths', 'kd_ratio', 'headshots', 'accuracy', 'playtime', 'wins'];
+    if (!in_array($stat, $validStats)) {
+        $stat = 'kills';
+    }
+    
+    require_once(__DIR__ . '/MohaaStats/MohaaStatsAPI.php');
+    $api = new MohaaStatsAPIClient();
+    
+    // Fetch leaderboard data
+    $leaderboard = $api->getGlobalLeaderboard($stat, 50) ?? [];
+    
+    $context['mohaa_leaderboard'] = [
+        'stat' => $stat,
+        'valid_stats' => $validStats,
+        'players' => $leaderboard,
+    ];
+}
+
+/**
+ * Recent matches page
+ */
+function MohaaPlayers_Matches(): void
+{
+    global $context, $txt, $scripturl;
+    
+    loadTemplate('MohaaStats');
+    loadLanguage('MohaaStats');
+    
+    $context['page_title'] = $txt['mohaa_matches'] ?? 'Recent Matches';
+    $context['sub_template'] = 'mohaa_matches_list';
+    
+    require_once(__DIR__ . '/MohaaStats/MohaaStatsAPI.php');
+    $api = new MohaaStatsAPIClient();
+    
+    // Fetch recent matches
+    $matches = $api->getRecentMatches(50) ?? [];
+    
+    $context['mohaa_matches'] = [
+        'matches' => $matches,
+    ];
+}
+
 /**
  * Add menu button
  */

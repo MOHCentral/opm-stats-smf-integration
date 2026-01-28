@@ -446,6 +446,62 @@ function template_mohaa_leaderboards()
 }
 
 /**
+ * Matches list template
+ */
+function template_mohaa_matches_list()
+{
+    global $context, $txt, $scripturl;
+    
+    $matches = $context['mohaa_matches']['matches'] ?? [];
+    
+    echo '
+    <div class="mohaa-matches-list">
+        <h2 class="category_header">', $txt['mohaa_matches'] ?? 'Recent Matches', '</h2>
+        
+        <div class="windowbg">';
+    
+    if (!empty($matches)) {
+        echo '
+            <table class="table_grid">
+                <thead>
+                    <tr class="title_bar">
+                        <th>Match ID</th>
+                        <th>Map</th>
+                        <th>Game Type</th>
+                        <th>Server</th>
+                        <th>Players</th>
+                        <th>Duration</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>';
+        
+        foreach ($matches as $match) {
+            echo '
+                    <tr class="windowbg">
+                        <td><a href="', $scripturl, '?action=mohaaplayer;match=', $match['id'] ?? '', '">#', $match['id'] ?? 'N/A', '</a></td>
+                        <td>', htmlspecialchars($match['map'] ?? 'Unknown'), '</td>
+                        <td>', htmlspecialchars($match['game_type'] ?? 'TDM'), '</td>
+                        <td>', htmlspecialchars($match['server_name'] ?? 'Unknown Server'), '</td>
+                        <td>', (int)($match['player_count'] ?? 0), '</td>
+                        <td>', gmdate('i:s', $match['duration'] ?? 0), '</td>
+                        <td>', timeformat($match['ended_at'] ?? $match['started_at'] ?? time()), '</td>
+                    </tr>';
+        }
+        
+        echo '
+                </tbody>
+            </table>';
+    } else {
+        echo '<p class="centertext">', $txt['mohaa_no_matches'] ?? 'No recent matches found.', '</p>';
+    }
+    
+    echo '
+        </div>
+    </div>';
+}
+
+/**
  * Player profile template
  */
 function template_mohaa_player()
