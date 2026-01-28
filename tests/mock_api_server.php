@@ -162,4 +162,49 @@ if (strpos($uri, '/api/v1/auth/device') !== false) {
     response(['user_code' => 'ABC-DEF', 'expires_in' => 600]);
 }
 
+// Auth New Endpoints
+if (strpos($uri, '/api/v1/auth/history/') !== false) {
+    response(['history' => [
+        [
+            'attempt_at' => '2023-01-01T12:00:00Z',
+            'server_name' => 'MOHAA Server 1',
+            'player_ip' => '192.168.1.1',
+            'success' => true,
+            'failure_reason' => null
+        ],
+        [
+            'attempt_at' => '2023-01-02T12:00:00Z',
+            'server_name' => 'MOHAA Server 2',
+            'player_ip' => '192.168.1.2',
+            'success' => false,
+            'failure_reason' => 'Invalid Token'
+        ]
+    ]]);
+}
+if (strpos($uri, '/api/v1/auth/trusted-ips/') !== false) {
+    response(['trusted_ips' => [
+        [
+            'id' => 101,
+            'ip_address' => '10.0.0.1',
+            'last_used_at' => '2023-01-05T10:00:00Z'
+        ]
+    ]]);
+}
+if (strpos($uri, '/api/v1/auth/pending-ips/') !== false) {
+    response(['pending_ips' => [
+        [
+            'id' => 202,
+            'requested_at' => '2023-01-06T09:00:00Z',
+            'server_name' => 'MOHAA Server 3',
+            'ip_address' => '10.0.0.5'
+        ]
+    ]]);
+}
+if (strpos($uri, '/api/v1/auth/trusted-ip/') !== false && $method === 'DELETE') {
+    response(['success' => true]);
+}
+if (strpos($uri, '/api/v1/auth/pending-ip/resolve') !== false && $method === 'POST') {
+    response(['success' => true]);
+}
+
 response(['error' => 'Not Found'], 404);

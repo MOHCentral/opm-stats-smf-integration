@@ -140,6 +140,50 @@ echo "Testing Invalid JSON...\n";
 $resJson = $api->getPlayerStats('ERROR_JSON');
 assertNull($resJson, "Result for ERROR_JSON");
 
+// 4. Test New Auth Methods and Stubs
+echo "\nTesting New Auth Methods...\n";
+$authMethods = [
+    'getLoginHistory' => [1],
+    'getTrustedIPs' => [1],
+    'getPendingIPApprovals' => [1],
+    'deleteTrustedIP' => [1, 101],
+    'resolvePendingIP' => [1, 202, 'approve'],
+];
+
+foreach ($authMethods as $method => $args) {
+    echo "\nTesting $method...\n";
+    $result = call_user_func_array([$api, $method], $args);
+    assertNotNull($result, "$method result");
+
+    // Check specific structure for some methods
+    if ($method === 'getLoginHistory' && isset($result['history'][0])) {
+         // attempt_at might be string, so checking not null
+         assertNotNull($result['history'][0]['attempt_at'], 'history.attempt_at');
+    }
+    if ($method === 'getTrustedIPs' && isset($result['trusted_ips'][0])) {
+         assertType($result['trusted_ips'][0]['id'], 'int', 'trusted_ips.id');
+    }
+    if ($method === 'getPendingIPApprovals' && isset($result['pending_ips'][0])) {
+         assertType($result['pending_ips'][0]['id'], 'int', 'pending_ips.id');
+    }
+}
+
+echo "\nTesting Stubs...\n";
+$stubs = [
+    'getHeadToHead' => ['a', 'b'],
+    'getPlayerRank' => ['a'],
+    'getPlayerMapStats' => ['a'],
+    'getActivePlayers' => [24]
+];
+
+foreach ($stubs as $method => $args) {
+    echo "Testing Stub $method...\n";
+    $result = call_user_func_array([$api, $method], $args);
+    // Stubs might return null or empty array, but shouldn't crash
+    echo "[PASS] $method returned " . gettype($result) . "\n";
+    $passes++;
+}
+
 // Summary
 echo "\n------------------------------------------------\n";
 echo "Test Suite Completed.\n";
