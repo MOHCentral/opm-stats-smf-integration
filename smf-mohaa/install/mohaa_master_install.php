@@ -36,7 +36,17 @@ if (!$ssi_found && !defined('SMF')) {
     die('<b>Error:</b> Could not find SSI.php. Please run from within SMF directory.');
 }
 
-global $smcFunc, $modSettings, $db_prefix, $sourcedir, $db_connection;
+global $smcFunc, $modSettings, $db_prefix, $sourcedir, $db_connection, $db_name;
+
+// Verify database is selected (SSI.php should have done this via Settings.php)
+if (empty($db_name)) {
+    die('<b>Error:</b> Database name not set. Check your Settings.php configuration.');
+}
+
+// Ensure database is selected - fixes "No database selected" error
+if (!empty($db_connection) && !empty($db_name)) {
+    @mysqli_select_db($db_connection, $db_name);
+}
 
 // Load database packages functions (db_create_table, db_add_column, etc.)
 // SSI.php only loads basic CRUD - package functions are in DbPackages-mysql.php
