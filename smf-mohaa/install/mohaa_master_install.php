@@ -69,7 +69,7 @@ if (!empty($sourcedir) && file_exists($sourcedir . '/DbPackages-mysql.php')) {
 }
 
 // Installer version - increment when schema changes
-define('MOHAA_INSTALLER_VERSION', '2.0.0');
+define('MOHAA_INSTALLER_VERSION', '2.0.1');
 
 // Output header
 $is_cli = php_sapi_name() === 'cli';
