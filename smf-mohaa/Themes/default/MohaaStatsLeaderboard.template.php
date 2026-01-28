@@ -26,22 +26,22 @@ function template_mohaa_stats_leaderboard()
             justify-content: center;
             gap: 25px;
             padding: 40px; 
-            background: linear-gradient(135deg, #1a252f 0%, #2c3e50 100%); 
+            background: linear-gradient(135deg, #ffffff 0%, #f0f2f5 100%); 
             margin-bottom: 30px; 
             border-radius: 12px; 
-            color: #ffffff; 
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-            border: 1px solid rgba(255,255,255,0.05);
+            color: #2c3e50; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border: 1px solid #e1e4e8;
             text-align: left;
         }
         .mohaa-hero-stat .stat-icon {
             font-size: 3.5em; 
             line-height: 1;
-            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
         }
         .mohaa-hero-stat h1 { 
-            color: #ffffff; 
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3); 
+            color: #2c3e50; 
+            text-shadow: 0 1px 2px rgba(0,0,0,0.05); 
             margin: 0 0 5px 0; 
             font-size: 2.2em;
             text-transform: uppercase;
@@ -49,19 +49,19 @@ function template_mohaa_stats_leaderboard()
             font-weight: 700;
         }
         .mohaa-hero-stat p { 
-            color: #bdc3c7; 
+            color: #7f8c8d; 
             font-size: 1.1em; 
             margin: 0; 
             max-width: 600px;
         }
         
-        .ag-theme-alpine { --ag-foreground-color: #2c3e50; --ag-header-foreground-color: #fff; --ag-header-background-color: #2c3e50; --ag-row-hover-color: rgba(52, 152, 219, 0.1); --ag-selected-row-background-color: rgba(52, 152, 219, 0.2); }
+        .ag-theme-alpine { --ag-foreground-color: #2c3e50; --ag-header-foreground-color: #555; --ag-header-background-color: #f9f9f9; --ag-row-hover-color: rgba(52, 152, 219, 0.05); --ag-selected-row-background-color: rgba(52, 152, 219, 0.1); --ag-border-color: #eee; }
         .ag-theme-alpine .ag-header-cell { font-family: "Inter", sans-serif; text-transform: uppercase; letter-spacing: 1px; font-size: 12px; }
         .ag-theme-alpine .ag-cell { font-family: "Inter", sans-serif; display: flex; align-items: center; justify-content: center; }
         .player-cell { justify-content: flex-start !important; }
         
-        .rank-badge { font-size: 1.4em; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2)); }
-        .player-avatar-small { width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #34495e; color: #fff; font-size: 10px; margin-right: 8px; font-weight: bold; }
+        .rank-badge { font-size: 1.4em; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1)); }
+        .player-avatar-small { width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #ecf0f1; color: #555; font-size: 10px; margin-right: 8px; font-weight: bold; }
     </style>
     
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
@@ -118,11 +118,13 @@ function template_mohaa_stats_leaderboard()
 
     // Hero Section
     echo '
-        <div style="text-align: left;">
-            <h1 style="font-size: 2em; text-transform: uppercase; letter-spacing: 2px; margin: 0;">', $info['title'], '</h1>
-            <p style="margin: 0; opacity: 0.9; font-size: 0.9em;">', $info['desc'], '</p>
+        <div class="mohaa-hero-stat">
+            <div class="stat-icon">', $info['icon'], '</div>
+            <div>
+                <h1>', $info['title'], '</h1>
+                <p>', $info['desc'], '</p>
+            </div>
         </div>
-    </div>
     
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     
@@ -1217,12 +1219,12 @@ function template_mohaa_stats_map_leaderboard()
                 series: [{ name: "Matches", data: mapMatches }],
                 chart: { type: "bar", height: 300, background: "transparent", toolbar: { show: false } },
                 plotOptions: { bar: { horizontal: true, borderRadius: 4, barHeight: "70%" } },
-                colors: ["#4fc3f7"],
-                xaxis: { categories: mapLabels, labels: { style: { colors: "#888" } } },
-                yaxis: { labels: { style: { colors: "#888" } } },
-                grid: { borderColor: "#333" },
-                dataLabels: { enabled: true, style: { colors: ["#fff"] } },
-                theme: { mode: "dark" }
+                colors: ["#3498db"],
+                xaxis: { categories: mapLabels, labels: { style: { colors: "#555" } } },
+                yaxis: { labels: { style: { colors: "#555" } } },
+                grid: { borderColor: "#eee" },
+                dataLabels: { enabled: true, style: { colors: ["#333"] } },
+                theme: { mode: "light" }
             }).render();
         }
         
@@ -1233,10 +1235,10 @@ function template_mohaa_stats_map_leaderboard()
                 chart: { type: "donut", height: 300, background: "transparent" },
                 labels: mapLabels,
                 colors: ["#f44336", "#e91e63", "#9c27b0", "#673ab7", "#3f51b5", "#2196f3", "#00bcd4", "#009688", "#4caf50", "#8bc34a"],
-                legend: { position: "right", labels: { colors: "#888" } },
+                legend: { position: "right", labels: { colors: "#555" } },
                 dataLabels: { enabled: false },
-                plotOptions: { pie: { donut: { size: "60%", labels: { show: true, total: { show: true, label: "Total Kills", color: "#888", formatter: function(w) { return w.globals.seriesTotals.reduce((a, b) => a + b, 0).toLocaleString(); } } } } } },
-                theme: { mode: "dark" }
+                plotOptions: { pie: { donut: { size: "60%", labels: { show: true, total: { show: true, label: "Total Kills", color: "#555", formatter: function(w) { return w.globals.seriesTotals.reduce((a, b) => a + b, 0).toLocaleString(); } } } } } },
+                theme: { mode: "light" }
             }).render();
         }
     });';
@@ -1755,10 +1757,10 @@ function template_mohaa_stats_gametypes()
                 }],
                 chart: { type: "bar", height: 300, background: "transparent", toolbar: { show: false } },
                 plotOptions: { bar: { horizontal: true, borderRadius: 4 } },
-                dataLabels: { enabled: true },
-                xaxis: { categories: gameTypes.map(function(g) { return g.name; }) },
-                colors: ["#4fc3f7"],
-                theme: { mode: "dark" }
+                dataLabels: { enabled: true, style: { colors: ["#333"] } },
+                xaxis: { categories: gameTypes.map(function(g) { return g.name; }), labels: { style: { colors: "#555" } } },
+                colors: ["#3498db"],
+                theme: { mode: "light" }
             }).render();
         }
         
@@ -1769,8 +1771,8 @@ function template_mohaa_stats_gametypes()
                 chart: { type: "donut", height: 300, background: "transparent" },
                 labels: gameTypes.map(function(g) { return g.name; }),
                 colors: ["#e91e63", "#9c27b0", "#673ab7", "#3f51b5", "#2196f3", "#00bcd4", "#009688"],
-                legend: { position: "right", labels: { colors: "#fff" } },
-                theme: { mode: "dark" }
+                legend: { position: "right", labels: { colors: "#555" } },
+                theme: { mode: "light" }
             }).render();
         }
     });
@@ -1938,10 +1940,10 @@ function template_mohaa_stats_weapons()
                 series: [{ name: "Kills", data: weapons.map(w => w.kills || 0) }],
                 chart: { type: "bar", height: 300, background: "transparent", toolbar: { show: false } },
                 plotOptions: { bar: { horizontal: true, borderRadius: 4 } },
-                colors: ["#e91e63"],
-                xaxis: { categories: weapons.map(w => w.name), labels: { style: { colors: "#888" } } },
-                yaxis: { labels: { style: { colors: "#fff" } } },
-                theme: { mode: "dark" }
+                colors: ["#e74c3c"],
+                xaxis: { categories: weapons.map(w => w.name), labels: { style: { colors: "#555" } } },
+                yaxis: { labels: { style: { colors: "#555" } } },
+                theme: { mode: "light" }
             }).render();
         }
         
@@ -1955,12 +1957,12 @@ function template_mohaa_stats_weapons()
                     data: accWeapons.map(w => ((w.hits / w.shots) * 100).toFixed(1)) 
                 }],
                 chart: { type: "radar", height: 300, background: "transparent", toolbar: { show: false } },
-                xaxis: { categories: accWeapons.map(w => w.name), labels: { style: { colors: "#888" } } },
-                fill: { opacity: 0.2, colors: ["#4fc3f7"] },
-                stroke: { show: true, width: 2, colors: ["#4fc3f7"], dashArray: 0 },
-                markers: { size: 4, colors: ["#fff"], strokeColors: "#4fc3f7", strokeWidth: 2 },
+                xaxis: { categories: accWeapons.map(w => w.name), labels: { style: { colors: "#555" } } },
+                fill: { opacity: 0.2, colors: ["#3498db"] },
+                stroke: { show: true, width: 2, colors: ["#3498db"], dashArray: 0 },
+                markers: { size: 4, colors: ["#fff"], strokeColors: "#3498db", strokeWidth: 2 },
                 yaxis: { show: false },
-                theme: { mode: "dark" }
+                theme: { mode: "light" }
             }).render();
         }
     });
