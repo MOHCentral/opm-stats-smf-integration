@@ -116,6 +116,27 @@ class MohaaStatsAPIClient
         }
         return $data;
     }
+
+    private function delete(string $endpoint, array $data = []): ?array
+    {
+        $url = $this->baseUrl . '/api/v1' . $endpoint;
+        if (!empty($data)) $url .= '?' . http_build_query($data);
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => $this->timeout,
+            CURLOPT_CUSTOMREQUEST => 'DELETE',
+            CURLOPT_HTTPHEADER => ['Accept: application/json', 'X-Server-Token: ' . $this->serverToken],
+        ]);
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($httpCode < 200 || $httpCode >= 300 || $response === false) return null;
+        $data = json_decode($response, true);
+        if (is_array($data)) {
+            $data = $this->_validateAndCast($data);
+        }
+        return $data;
+    }
     
     public function clearCache(): void { clean_cache('mohaa_api_'); }
     public function getGlobalStats(): ?array { return $this->get('/stats/global'); }
@@ -140,7 +161,13 @@ class MohaaStatsAPIClient
     public function getMapLeaderboard(string $mapId, int $limit = 25): ?array { return $this->get('/stats/map/' . urlencode($mapId) . '/leaderboard', ['limit'=>$limit]); }
     public function getMatchHeatmap(string $matchId, string $type = 'kills'): ?array { return $this->get('/stats/match/' . urlencode($matchId) . '/heatmap', ['type'=>$type]); }
     public function initClaim(int $forumUserId): ?array { return $this->post('/auth/claim/init', ['forum_user_id'=>$forumUserId]); }
-    public function initDeviceAuth(int $forumUserId): ?array { return $this->post('/auth/device', ['forum_user_id'=>$forumUserId]); }
+    public function initDeviceAuth(int $forumUserId, bool $force = false): ?array { return $this->post('/auth/device', ['forum_user_id'=>$forumUserId, 'force'=>$force]); }
+
+    public function getLoginHistory(int $forumUserId): ?array { return $this->get('/auth/history/' . $forumUserId); }
+    public function getTrustedIPs(int $forumUserId): ?array { return $this->get('/auth/trusted-ips/' . $forumUserId); }
+    public function getPendingIPApprovals(int $forumUserId): ?array { return $this->get('/auth/pending-ips/' . $forumUserId); }
+    public function deleteTrustedIP(int $forumUserId, int $ipId): ?array { return $this->delete('/auth/trusted-ip/' . $ipId, ['forum_user_id'=>$forumUserId]); }
+    public function resolvePendingIP(int $forumUserId, int $approvalId, string $action): ?array { return $this->post('/auth/pending-ip/resolve', ['forum_user_id'=>$forumUserId, 'approval_id'=>$approvalId, 'action'=>$action]); }
 
     // Server Stats
     public function getGlobalActivity(): ?array { return $this->get('/stats/global/activity'); }
@@ -171,7 +198,8 @@ class MohaaStatsAPIClient
             'rank', 'score', 'wins', 'losses', 'draws', 'shots', 'hits', 'headshots',
             'rounds', 'time_played', 'assist', 'assists', 'suicides', 'team_kills',
             'expires_in', 'ttl', 'forum_user_id', 'cache_time', 'start_time', 'end_time',
-            'points', 'rounds_played', 'flags_captured', 'obj_returned', 'obj_stolen'
+            'points', 'rounds_played', 'flags_captured', 'obj_returned', 'obj_stolen',
+            'ip_id', 'approval_id', 'id'
         ];
         $floatKeys = [
             'accuracy', 'kdr', 'wl_ratio', 'kd_ratio', 'damage', 'percent',
