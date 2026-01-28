@@ -113,6 +113,7 @@ class MohaaStatsAPIClient
     public function clearCache(): void { clean_cache('mohaa_api_'); }
     public function getGlobalStats(): ?array { return $this->get('/stats/global'); }
     public function getLeaderboard(string $stat = 'kills', int $limit = 25, int $offset = 0, string $period = 'all'): ?array { return $this->get('/stats/leaderboard/global', ['stat'=>$stat,'limit'=>$limit,'offset'=>$offset,'period'=>$period]); }
+    public function getGlobalLeaderboard(string $stat = 'kills', int $limit = 25, int $offset = 0, string $period = 'all'): ?array { return $this->getLeaderboard($stat, $limit, $offset, $period); } // Alias
     public function getLeaderboardCount(string $stat = 'kills', string $period = 'all'): int { $data = $this->get('/stats/leaderboard/global', ['stat'=>$stat,'period'=>$period,'count_only'=>true]); return $data['total'] ?? 0; }
     public function getPlayerStats(string $guid): ?array { return $this->get('/stats/player/' . urlencode($guid)); }
     public function resolvePlayerByName(string $name): ?array { return $this->get('/stats/player/name/' . urlencode($name)); }
