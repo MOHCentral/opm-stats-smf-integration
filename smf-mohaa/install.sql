@@ -12,25 +12,29 @@
 -- PART 1: SMF Integration Hooks (smf_settings table)
 -- =============================================================================
 
--- Delete any existing MOHAA entries first
-DELETE FROM smf_settings WHERE variable LIKE 'mohaa%';
-DELETE FROM smf_settings WHERE variable = 'integrate_pre_include' AND value LIKE '%MohaaStats%';
-DELETE FROM smf_settings WHERE variable = 'integrate_actions' AND value LIKE '%MohaaStats%';
-DELETE FROM smf_settings WHERE variable = 'integrate_menu_buttons' AND value LIKE '%MohaaStats%';
-DELETE FROM smf_settings WHERE variable = 'integrate_admin_areas' AND value LIKE '%MohaaStats%';
+-- Delete any existing MOHAA hook entries first (clean slate)
+DELETE FROM smf_settings WHERE variable IN (
+    'integrate_actions', 'integrate_menu_buttons', 'integrate_profile_areas', 'integrate_admin_areas'
+) AND value LIKE '%Mohaa%';
 
--- Insert integration hooks
--- NOTE: API URL should NOT include /api/v1 - PHP adds it automatically
--- Set the actual URL via environment variable MOHAA_API_URL or Admin settings
+-- Delete old MOHAA settings
+DELETE FROM smf_settings WHERE variable LIKE 'mohaa%';
+
+-- Insert integration hooks (comma-separated function list per hook)
 INSERT INTO smf_settings (variable, value) VALUES 
-    ('integrate_pre_include', '$sourcedir/MohaaStats/MohaaStats.php'),
-    ('integrate_actions', 'MohaaStats_Actions'),
-    ('integrate_menu_buttons', 'MohaaStats_MenuButtons'),
-    ('integrate_admin_areas', 'MohaaStats_AdminAreas'),
+    ('integrate_actions', 'MohaaPlayers.php|MohaaPlayers_Actions,MohaaServers.php|MohaaServers_Actions,MohaaAchievements.php|MohaaAchievements_Actions,MohaaTournaments.php|MohaaTournaments_Actions,MohaaTeams.php|MohaaTeams_Actions,MohaaPredictions.php|MohaaPredictions_Actions,MohaaComparison.php|MohaaComparison_Actions'),
+    ('integrate_menu_buttons', 'MohaaPlayers.php|MohaaPlayers_MenuButtons'),
+    ('integrate_profile_areas', 'MohaaPlayers.php|MohaaPlayers_ProfileAreas,MohaaAchievements.php|MohaaAchievements_ProfileAreas,MohaaTeams.php|MohaaTeams_ProfileAreas'),
+    ('integrate_admin_areas', 'MohaaTournaments.php|MohaaTournaments_AdminAreas')
+ON DUPLICATE KEY UPDATE value = VALUES(value);
+
+-- Insert MOHAA settings
+INSERT INTO smf_settings (variable, value) VALUES 
     ('mohaa_stats_installed', '1'),
     ('mohaa_stats_enabled', '1'),
-    ('mohaa_stats_api_url', 'http://localhost:8084'),
-    ('mohaa_stats_cache_ttl', '300');
+    ('mohaa_stats_api_url', 'http://opm-stats-api:8080'),
+    ('mohaa_stats_cache_ttl', '300')
+ON DUPLICATE KEY UPDATE value = VALUES(value);
 
 -- =============================================================================
 -- PART 2: Core Identity Tables
@@ -42,7 +46,7 @@ CREATE TABLE IF NOT EXISTS smf_mohaa_identities (
     id_member INT UNSIGNED NOT NULL,
     player_guid VARCHAR(64) NOT NULL,
     player_name VARCHAR(100),
-    linked_date INT UNSIGNED DEFAULT 0,
+    linked_at INT UNSIGNED DEFAULT 0,
     verified TINYINT(1) DEFAULT 0,
     UNIQUE KEY unique_guid (player_guid),
     INDEX idx_member (id_member)
