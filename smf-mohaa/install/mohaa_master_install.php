@@ -1,12 +1,16 @@
 <?php
 /**
- * MOHAA Stats System - Master Installer
+ * MOHAA Stats System - Master Installer (Idempotent)
  * 
- * Run this from browser: http://your-forum/Sources/mohaa_master_install.php
- * Or from CLI: php -f /path/to/smf/Sources/mohaa_master_install.php
+ * This installer is designed to be run multiple times safely.
+ * It will create missing tables, add missing columns, update hooks,
+ * and ensure settings are correct without duplicating data.
+ * 
+ * Run from browser: http://your-forum/mohaa_install.php
+ * Or from CLI: php -f /path/to/smf/mohaa_install.php
  * 
  * @package MohaaStats
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 // Standalone mode - find SSI.php
@@ -15,6 +19,7 @@ $ssi_paths = [
     dirname(__FILE__) . '/../../SSI.php',         // Sources/MohaaStats/
     dirname(__FILE__) . '/../SSI.php',            // Sources/
     dirname(__FILE__) . '/SSI.php',               // root
+    '/var/www/html/SSI.php',                      // Docker location
     '/var/www/smf/SSI.php',                       // common location
 ];
 
@@ -31,203 +36,353 @@ if (!$ssi_found && !defined('SMF')) {
     die('<b>Error:</b> Could not find SSI.php. Please run from within SMF directory.');
 }
 
-global $smcFunc, $modSettings, $db_prefix, $sourcedir;
+global $smcFunc, $modSettings, $db_prefix, $sourcedir, $db_connection;
+
+// Installer version - increment when schema changes
+define('MOHAA_INSTALLER_VERSION', '2.0.0');
 
 // Output header
-echo "<html><head><title>MOHAA Stats Installer</title>";
-echo "<style>
+$is_cli = php_sapi_name() === 'cli';
+if (!$is_cli) {
+    echo "<html><head><title>MOHAA Stats Installer</title>";
+    echo "<style>
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px; background: #1a1a2e; color: #eee; }
-.container { max-width: 800px; margin: 0 auto; }
+.container { max-width: 900px; margin: 0 auto; }
 h1 { color: #4ecca3; }
 h2 { color: #64b5f6; border-bottom: 1px solid #333; padding-bottom: 10px; margin-top: 30px; }
 .success { color: #4ecca3; }
 .error { color: #ff6b6b; }
 .warning { color: #ffd93d; }
 .info { color: #64b5f6; }
+.skip { color: #888; }
 pre { background: #0f0f1a; padding: 15px; border-radius: 8px; overflow-x: auto; }
 .step { background: #16213e; padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 4px solid #4ecca3; }
+.step.skipped { border-left-color: #888; opacity: 0.7; }
+.step.error { border-left-color: #ff6b6b; }
+.step.warning { border-left-color: #ffd93d; }
 .btn { display: inline-block; padding: 10px 20px; background: #4ecca3; color: #1a1a2e; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 5px; }
 .btn:hover { background: #3db892; }
+table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #333; }
+th { background: #0f0f1a; color: #64b5f6; }
 </style></head><body><div class='container'>";
-echo "<h1>🎮 MOHAA Stats System - Master Installer</h1>";
+    echo "<h1>🎮 MOHAA Stats System - Master Installer v" . MOHAA_INSTALLER_VERSION . "</h1>";
+    echo "<p class='info'>This installer is idempotent - safe to run multiple times.</p>";
+}
+
+function output($message, $type = 'success', $cli = false) {
+    $prefixes = [
+        'success' => '✓',
+        'error' => '✗',
+        'warning' => '⚠',
+        'skip' => '○',
+        'info' => '→',
+    ];
+    $prefix = $prefixes[$type] ?? '→';
+    
+    if ($cli) {
+        echo "$prefix $message\n";
+    } else {
+        $class = $type === 'skip' ? 'step skipped' : ($type === 'error' ? 'step error' : ($type === 'warning' ? 'step warning' : 'step'));
+        echo "<div class='$class'><span class='$type'>$prefix</span> $message</div>";
+    }
+}
+
+function section($title, $cli = false) {
+    if ($cli) {
+        echo "\n=== $title ===\n";
+    } else {
+        echo "<h2>$title</h2>";
+    }
+}
 
 $errors = [];
-$success = [];
+$stats = ['created' => 0, 'updated' => 0, 'skipped' => 0, 'errors' => 0];
 
 // ============================================================================
-// STEP 1: Create Database Tables
+// STEP 1: Create/Update Database Tables
 // ============================================================================
-echo "<h2>Step 1: Database Tables</h2>";
+section("Step 1: Database Tables", $is_cli);
 
+/**
+ * Complete table definitions with all columns
+ * When adding new columns, just add them here - installer will add missing ones
+ */
 $tables = [
-    // Identity linking table
-    [
-        'name' => 'mohaa_identities',
+    'mohaa_identities' => [
         'columns' => [
-            ['name' => 'id_identity', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'auto' => true],
-            ['name' => 'id_member', 'type' => 'mediumint', 'size' => 8, 'unsigned' => true, 'default' => 0],
-            ['name' => 'player_guid', 'type' => 'varchar', 'size' => 64, 'default' => ''],
-            ['name' => 'player_name', 'type' => 'varchar', 'size' => 255, 'default' => ''],
-            ['name' => 'linked_date', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
-            ['name' => 'verified', 'type' => 'tinyint', 'size' => 1, 'unsigned' => true, 'default' => 0],
+            'id_identity' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'auto' => true],
+            'id_member' => ['type' => 'mediumint', 'size' => 8, 'unsigned' => true, 'default' => 0],
+            'player_guid' => ['type' => 'varchar', 'size' => 64, 'default' => ''],
+            'player_name' => ['type' => 'varchar', 'size' => 255, 'default' => ''],
+            'linked_date' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
+            'verified' => ['type' => 'tinyint', 'size' => 1, 'unsigned' => true, 'default' => 0],
         ],
         'indexes' => [
             ['type' => 'primary', 'columns' => ['id_identity']],
-            ['type' => 'index', 'columns' => ['id_member']],
-            ['type' => 'unique', 'columns' => ['player_guid']],
+            ['name' => 'idx_member', 'type' => 'index', 'columns' => ['id_member']],
+            ['name' => 'idx_guid', 'type' => 'unique', 'columns' => ['player_guid']],
         ],
     ],
-    // Claim codes
-    [
-        'name' => 'mohaa_claim_codes',
+    'mohaa_claim_codes' => [
         'columns' => [
-            ['name' => 'id_claim', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'auto' => true],
-            ['name' => 'id_member', 'type' => 'mediumint', 'size' => 8, 'unsigned' => true, 'default' => 0],
-            ['name' => 'claim_code', 'type' => 'varchar', 'size' => 16, 'default' => ''],
-            ['name' => 'created_at', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
-            ['name' => 'expires_at', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
-            ['name' => 'used', 'type' => 'tinyint', 'size' => 1, 'unsigned' => true, 'default' => 0],
+            'id_claim' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'auto' => true],
+            'id_member' => ['type' => 'mediumint', 'size' => 8, 'unsigned' => true, 'default' => 0],
+            'claim_code' => ['type' => 'varchar', 'size' => 16, 'default' => ''],
+            'created_at' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
+            'expires_at' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
+            'used' => ['type' => 'tinyint', 'size' => 1, 'unsigned' => true, 'default' => 0],
         ],
         'indexes' => [
             ['type' => 'primary', 'columns' => ['id_claim']],
-            ['type' => 'unique', 'columns' => ['claim_code']],
-            ['type' => 'index', 'columns' => ['id_member']],
+            ['name' => 'idx_code', 'type' => 'unique', 'columns' => ['claim_code']],
+            ['name' => 'idx_member', 'type' => 'index', 'columns' => ['id_member']],
         ],
     ],
-    // Device tokens
-    [
-        'name' => 'mohaa_device_tokens',
+    'mohaa_device_tokens' => [
         'columns' => [
-            ['name' => 'id_token', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'auto' => true],
-            ['name' => 'id_member', 'type' => 'mediumint', 'size' => 8, 'unsigned' => true, 'default' => 0],
-            ['name' => 'user_code', 'type' => 'varchar', 'size' => 16, 'default' => ''],
-            ['name' => 'device_code', 'type' => 'varchar', 'size' => 64, 'default' => ''],
-            ['name' => 'created_at', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
-            ['name' => 'expires_at', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
-            ['name' => 'verified', 'type' => 'tinyint', 'size' => 1, 'unsigned' => true, 'default' => 0],
+            'id_token' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'auto' => true],
+            'id_member' => ['type' => 'mediumint', 'size' => 8, 'unsigned' => true, 'default' => 0],
+            'user_code' => ['type' => 'varchar', 'size' => 16, 'default' => ''],
+            'device_code' => ['type' => 'varchar', 'size' => 64, 'default' => ''],
+            'created_at' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
+            'expires_at' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
+            'verified' => ['type' => 'tinyint', 'size' => 1, 'unsigned' => true, 'default' => 0],
         ],
         'indexes' => [
             ['type' => 'primary', 'columns' => ['id_token']],
-            ['type' => 'unique', 'columns' => ['user_code']],
-            ['type' => 'index', 'columns' => ['device_code']],
+            ['name' => 'idx_user_code', 'type' => 'unique', 'columns' => ['user_code']],
+            ['name' => 'idx_device_code', 'type' => 'index', 'columns' => ['device_code']],
         ],
     ],
-    // Achievement definitions
-    [
-        'name' => 'mohaa_achievement_defs',
+    'mohaa_achievement_defs' => [
         'columns' => [
-            ['name' => 'id_achievement', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'auto' => true],
-            ['name' => 'code', 'type' => 'varchar', 'size' => 50, 'default' => ''],
-            ['name' => 'name', 'type' => 'varchar', 'size' => 255, 'default' => ''],
-            ['name' => 'description', 'type' => 'text'],
-            ['name' => 'category', 'type' => 'varchar', 'size' => 50, 'default' => 'basic'],
-            ['name' => 'tier', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 1],
-            ['name' => 'icon', 'type' => 'varchar', 'size' => 50, 'default' => 'trophy'],
-            ['name' => 'requirement_type', 'type' => 'varchar', 'size' => 50, 'default' => ''],
-            ['name' => 'requirement_value', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 1],
-            ['name' => 'points', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 10],
-            ['name' => 'is_hidden', 'type' => 'tinyint', 'size' => 1, 'unsigned' => true, 'default' => 0],
-            ['name' => 'sort_order', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
+            'id_achievement' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'auto' => true],
+            'code' => ['type' => 'varchar', 'size' => 50, 'default' => ''],
+            'name' => ['type' => 'varchar', 'size' => 255, 'default' => ''],
+            'description' => ['type' => 'text', 'default' => null],
+            'category' => ['type' => 'varchar', 'size' => 50, 'default' => 'basic'],
+            'tier' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 1],
+            'icon' => ['type' => 'varchar', 'size' => 50, 'default' => 'trophy'],
+            'requirement_type' => ['type' => 'varchar', 'size' => 50, 'default' => ''],
+            'requirement_value' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 1],
+            'points' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 10],
+            'is_hidden' => ['type' => 'tinyint', 'size' => 1, 'unsigned' => true, 'default' => 0],
+            'sort_order' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
         ],
         'indexes' => [
             ['type' => 'primary', 'columns' => ['id_achievement']],
-            ['type' => 'unique', 'columns' => ['code']],
+            ['name' => 'idx_code', 'type' => 'unique', 'columns' => ['code']],
         ],
     ],
-    // Player achievements
-    [
-        'name' => 'mohaa_player_achievements',
+    'mohaa_player_achievements' => [
         'columns' => [
-            ['name' => 'id_unlock', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'auto' => true],
-            ['name' => 'id_member', 'type' => 'mediumint', 'size' => 8, 'unsigned' => true, 'default' => 0],
-            ['name' => 'player_guid', 'type' => 'varchar', 'size' => 64, 'default' => ''],
-            ['name' => 'id_achievement', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
-            ['name' => 'unlocked_date', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
-            ['name' => 'progress', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
+            'id_unlock' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'auto' => true],
+            'id_member' => ['type' => 'mediumint', 'size' => 8, 'unsigned' => true, 'default' => 0],
+            'player_guid' => ['type' => 'varchar', 'size' => 64, 'default' => ''],
+            'id_achievement' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
+            'unlocked_date' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
+            'progress' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
         ],
         'indexes' => [
             ['type' => 'primary', 'columns' => ['id_unlock']],
-            ['type' => 'index', 'columns' => ['id_member']],
-            ['type' => 'unique', 'columns' => ['player_guid', 'id_achievement']],
+            ['name' => 'idx_member', 'type' => 'index', 'columns' => ['id_member']],
+            ['name' => 'idx_guid_ach', 'type' => 'unique', 'columns' => ['player_guid', 'id_achievement']],
         ],
     ],
-    // Teams
-    [
-        'name' => 'mohaa_teams',
+    'mohaa_achievement_progress' => [
         'columns' => [
-            ['name' => 'id_team', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'auto' => true],
-            ['name' => 'name', 'type' => 'varchar', 'size' => 100, 'default' => ''],
-            ['name' => 'tag', 'type' => 'varchar', 'size' => 10, 'default' => ''],
-            ['name' => 'description', 'type' => 'text'],
-            ['name' => 'logo_url', 'type' => 'varchar', 'size' => 255, 'default' => ''],
-            ['name' => 'id_leader', 'type' => 'mediumint', 'size' => 8, 'unsigned' => true, 'default' => 0],
-            ['name' => 'created_at', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
-            ['name' => 'is_active', 'type' => 'tinyint', 'size' => 1, 'unsigned' => true, 'default' => 1],
+            'id_progress' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'auto' => true],
+            'id_member' => ['type' => 'mediumint', 'size' => 8, 'unsigned' => true, 'default' => 0],
+            'id_achievement' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
+            'current_progress' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
+            'updated_at' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
+        ],
+        'indexes' => [
+            ['type' => 'primary', 'columns' => ['id_progress']],
+            ['name' => 'idx_member_ach', 'type' => 'unique', 'columns' => ['id_member', 'id_achievement']],
+        ],
+    ],
+    'mohaa_teams' => [
+        'columns' => [
+            'id_team' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'auto' => true],
+            'name' => ['type' => 'varchar', 'size' => 100, 'default' => ''],
+            'tag' => ['type' => 'varchar', 'size' => 10, 'default' => ''],
+            'description' => ['type' => 'text', 'default' => null],
+            'logo_url' => ['type' => 'varchar', 'size' => 255, 'default' => ''],
+            'id_leader' => ['type' => 'mediumint', 'size' => 8, 'unsigned' => true, 'default' => 0],
+            'created_at' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
+            'is_active' => ['type' => 'tinyint', 'size' => 1, 'unsigned' => true, 'default' => 1],
         ],
         'indexes' => [
             ['type' => 'primary', 'columns' => ['id_team']],
-            ['type' => 'unique', 'columns' => ['tag']],
+            ['name' => 'idx_tag', 'type' => 'unique', 'columns' => ['tag']],
         ],
     ],
-    // Team members
-    [
-        'name' => 'mohaa_team_members',
+    'mohaa_team_members' => [
         'columns' => [
-            ['name' => 'id_membership', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'auto' => true],
-            ['name' => 'id_team', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
-            ['name' => 'id_member', 'type' => 'mediumint', 'size' => 8, 'unsigned' => true, 'default' => 0],
-            ['name' => 'role', 'type' => 'varchar', 'size' => 20, 'default' => 'member'],
-            ['name' => 'joined_at', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
+            'id_membership' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'auto' => true],
+            'id_team' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
+            'id_member' => ['type' => 'mediumint', 'size' => 8, 'unsigned' => true, 'default' => 0],
+            'role' => ['type' => 'varchar', 'size' => 20, 'default' => 'member'],
+            'joined_at' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
         ],
         'indexes' => [
             ['type' => 'primary', 'columns' => ['id_membership']],
-            ['type' => 'unique', 'columns' => ['id_member']],
-            ['type' => 'index', 'columns' => ['id_team']],
+            ['name' => 'idx_member', 'type' => 'unique', 'columns' => ['id_member']],
+            ['name' => 'idx_team', 'type' => 'index', 'columns' => ['id_team']],
         ],
     ],
-    // Tournaments
-    [
-        'name' => 'mohaa_tournaments',
+    'mohaa_tournaments' => [
         'columns' => [
-            ['name' => 'id_tournament', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'auto' => true],
-            ['name' => 'name', 'type' => 'varchar', 'size' => 255, 'default' => ''],
-            ['name' => 'description', 'type' => 'text'],
-            ['name' => 'format', 'type' => 'varchar', 'size' => 20, 'default' => 'single_elim'],
-            ['name' => 'game_type', 'type' => 'varchar', 'size' => 20, 'default' => 'tdm'],
-            ['name' => 'max_teams', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 16],
-            ['name' => 'tournament_start', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
-            ['name' => 'tournament_end', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
-            ['name' => 'status', 'type' => 'varchar', 'size' => 20, 'default' => 'pending'],
-            ['name' => 'created_by', 'type' => 'mediumint', 'size' => 8, 'unsigned' => true, 'default' => 0],
-            ['name' => 'created_at', 'type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
+            'id_tournament' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'auto' => true],
+            'name' => ['type' => 'varchar', 'size' => 255, 'default' => ''],
+            'description' => ['type' => 'text', 'default' => null],
+            'format' => ['type' => 'varchar', 'size' => 20, 'default' => 'single_elim'],
+            'game_type' => ['type' => 'varchar', 'size' => 20, 'default' => 'tdm'],
+            'max_teams' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 16],
+            'tournament_start' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
+            'tournament_end' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
+            'status' => ['type' => 'varchar', 'size' => 20, 'default' => 'pending'],
+            'created_by' => ['type' => 'mediumint', 'size' => 8, 'unsigned' => true, 'default' => 0],
+            'created_at' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
         ],
         'indexes' => [
             ['type' => 'primary', 'columns' => ['id_tournament']],
+            ['name' => 'idx_status', 'type' => 'index', 'columns' => ['status']],
+        ],
+    ],
+    'mohaa_tournament_registrations' => [
+        'columns' => [
+            'id_registration' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'auto' => true],
+            'id_tournament' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
+            'id_team' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
+            'registered_at' => ['type' => 'int', 'size' => 10, 'unsigned' => true, 'default' => 0],
+            'status' => ['type' => 'varchar', 'size' => 20, 'default' => 'pending'],
+        ],
+        'indexes' => [
+            ['type' => 'primary', 'columns' => ['id_registration']],
+            ['name' => 'idx_tournament_team', 'type' => 'unique', 'columns' => ['id_tournament', 'id_team']],
         ],
     ],
 ];
 
-foreach ($tables as $table) {
-    try {
-        $smcFunc['db_create_table'](
-            '{db_prefix}' . $table['name'],
-            $table['columns'],
-            $table['indexes'],
-            [],
-            'ignore'
-        );
-        echo "<div class='step'><span class='success'>✓</span> Created table: <b>{$table['name']}</b></div>";
-        $success[] = "Table {$table['name']} created";
-    } catch (Exception $e) {
-        echo "<div class='step'><span class='error'>✗</span> Failed to create table: <b>{$table['name']}</b> - " . $e->getMessage() . "</div>";
-        $errors[] = "Table {$table['name']}: " . $e->getMessage();
+/**
+ * Get existing columns for a table
+ */
+function getExistingColumns($tableName) {
+    global $smcFunc, $db_prefix;
+    
+    $columns = [];
+    $result = $smcFunc['db_query']('', "SHOW COLUMNS FROM {db_prefix}$tableName", []);
+    while ($row = $smcFunc['db_fetch_assoc']($result)) {
+        $columns[$row['Field']] = $row;
+    }
+    $smcFunc['db_free_result']($result);
+    return $columns;
+}
+
+/**
+ * Check if table exists
+ */
+function tableExists($tableName) {
+    global $smcFunc, $db_prefix;
+    
+    $result = $smcFunc['db_query']('', "SHOW TABLES LIKE '{db_prefix}$tableName'", []);
+    $exists = $smcFunc['db_num_rows']($result) > 0;
+    $smcFunc['db_free_result']($result);
+    return $exists;
+}
+
+/**
+ * Build column definition SQL
+ */
+function buildColumnSQL($name, $def) {
+    $sql = "`$name` ";
+    
+    switch ($def['type']) {
+        case 'int':
+        case 'mediumint':
+        case 'tinyint':
+            $sql .= strtoupper($def['type']) . '(' . ($def['size'] ?? 10) . ')';
+            if (!empty($def['unsigned'])) $sql .= ' UNSIGNED';
+            break;
+        case 'varchar':
+            $sql .= 'VARCHAR(' . ($def['size'] ?? 255) . ')';
+            break;
+        case 'text':
+            $sql .= 'TEXT';
+            break;
+    }
+    
+    if (isset($def['default'])) {
+        if ($def['default'] === null) {
+            $sql .= ' DEFAULT NULL';
+        } else {
+            $sql .= " DEFAULT '" . addslashes($def['default']) . "'";
+        }
+    }
+    
+    if (!empty($def['auto'])) {
+        $sql .= ' AUTO_INCREMENT';
+    }
+    
+    return $sql;
+}
+
+// Process each table
+foreach ($tables as $tableName => $tableSpec) {
+    $fullTableName = str_replace('{db_prefix}', $db_prefix, '{db_prefix}' . $tableName);
+    
+    if (!tableExists($tableName)) {
+        // Create new table
+        $columns_arr = [];
+        foreach ($tableSpec['columns'] as $colName => $colDef) {
+            $columns_arr[] = ['name' => $colName] + $colDef;
+        }
+        
+        try {
+            $smcFunc['db_create_table']('{db_prefix}' . $tableName, $columns_arr, $tableSpec['indexes'], [], 'ignore');
+            output("Created table: <b>$tableName</b>", 'success', $is_cli);
+            $stats['created']++;
+        } catch (Exception $e) {
+            output("Failed to create table: <b>$tableName</b> - " . $e->getMessage(), 'error', $is_cli);
+            $errors[] = "Table $tableName: " . $e->getMessage();
+            $stats['errors']++;
+        }
+    } else {
+        // Table exists - check for missing columns
+        $existingCols = getExistingColumns($tableName);
+        $addedCols = [];
+        
+        foreach ($tableSpec['columns'] as $colName => $colDef) {
+            if (!isset($existingCols[$colName])) {
+                // Add missing column
+                $colSQL = buildColumnSQL($colName, $colDef);
+                try {
+                    $smcFunc['db_query']('', "ALTER TABLE {db_prefix}$tableName ADD COLUMN $colSQL", []);
+                    $addedCols[] = $colName;
+                } catch (Exception $e) {
+                    $errors[] = "Column $tableName.$colName: " . $e->getMessage();
+                    $stats['errors']++;
+                }
+            }
+        }
+        
+        if (!empty($addedCols)) {
+            output("Updated table <b>$tableName</b>: added columns [" . implode(', ', $addedCols) . "]", 'success', $is_cli);
+            $stats['updated']++;
+        } else {
+            output("Table <b>$tableName</b> already up to date", 'skip', $is_cli);
+            $stats['skipped']++;
+        }
     }
 }
 
 // ============================================================================
-// STEP 2: Register Hooks
+// STEP 2: Register Hooks (Idempotent)
 // ============================================================================
-echo "<h2>Step 2: Register Hooks</h2>";
+section("Step 2: Register Hooks", $is_cli);
 
 $hooks = [
     'integrate_actions' => [
@@ -239,14 +394,33 @@ $hooks = [
         'MohaaPredictions.php|MohaaPredictions_Actions',
         'MohaaComparison.php|MohaaComparison_Actions',
     ],
-    'integrate_menu_buttons' => 'MohaaPlayers.php|MohaaPlayers_MenuButtons',
+    'integrate_menu_buttons' => [
+        'MohaaPlayers.php|MohaaPlayers_MenuButtons',
+    ],
     'integrate_profile_areas' => [
         'MohaaPlayers.php|MohaaPlayers_ProfileAreas',
         'MohaaAchievements.php|MohaaAchievements_ProfileAreas',
         'MohaaTeams.php|MohaaTeams_ProfileAreas',
     ],
-    'integrate_admin_areas' => 'MohaaTournaments.php|MohaaTournaments_AdminAreas',
+    'integrate_admin_areas' => [
+        'MohaaTournaments.php|MohaaTournaments_AdminAreas',
+    ],
 ];
+
+/**
+ * Register hook only if not already registered (prevents duplicates)
+ */
+function addHookIfMissing($hook, $function) {
+    global $modSettings;
+    
+    $existing = !empty($modSettings[$hook]) ? explode(',', $modSettings[$hook]) : [];
+    
+    if (!in_array($function, $existing)) {
+        add_integration_function($hook, $function, true);
+        return true;
+    }
+    return false;
+}
 
 foreach ($hooks as $hook => $functions) {
     if (!is_array($functions)) {
@@ -254,19 +428,24 @@ foreach ($hooks as $hook => $functions) {
     }
     
     foreach ($functions as $function) {
-        add_integration_function($hook, $function, true);
-        echo "<div class='step'><span class='success'>✓</span> Hook: <b>$hook</b> → $function</div>";
+        if (addHookIfMissing($hook, $function)) {
+            output("Registered hook: <b>$hook</b> → $function", 'success', $is_cli);
+            $stats['created']++;
+        } else {
+            output("Hook already exists: <b>$hook</b> → $function", 'skip', $is_cli);
+            $stats['skipped']++;
+        }
     }
 }
 
 // ============================================================================
-// STEP 3: Configure Settings
+// STEP 3: Configure Settings (Idempotent - updateSettings handles this)
 // ============================================================================
-echo "<h2>Step 3: Configure Settings</h2>";
+section("Step 3: Configure Settings", $is_cli);
 
 $settings = [
     'mohaa_stats_enabled' => 1,
-    'mohaa_api_url' => 'http://localhost:8080/api/v1',
+    'mohaa_api_url' => 'http://opm-stats-api:8080/api/v1',  // Docker internal
     'mohaa_api_timeout' => 10,
     'mohaa_cache_duration' => 60,
     'mohaa_live_cache_duration' => 10,
@@ -280,53 +459,82 @@ $settings = [
     'mohaa_max_identities' => 3,
     'mohaa_claim_expiry' => 10,
     'mohaa_token_expiry' => 10,
+    'mohaa_installer_version' => MOHAA_INSTALLER_VERSION,
 ];
 
-updateSettings($settings);
-
+// Only update settings that are missing or need defaults
+$updated = [];
+$skipped = [];
 foreach ($settings as $key => $value) {
-    echo "<div class='step'><span class='success'>✓</span> Setting: <b>$key</b> = $value</div>";
+    if (!isset($modSettings[$key]) || $key === 'mohaa_installer_version') {
+        $updated[$key] = $value;
+    } else {
+        $skipped[] = $key;
+    }
+}
+
+if (!empty($updated)) {
+    updateSettings($updated);
+    foreach ($updated as $key => $value) {
+        output("Set: <b>$key</b> = $value", 'success', $is_cli);
+    }
+    $stats['updated'] += count($updated);
+}
+
+if (!empty($skipped)) {
+    output("Settings already configured: " . count($skipped) . " settings", 'skip', $is_cli);
+    $stats['skipped'] += count($skipped);
 }
 
 // ============================================================================
-// STEP 4: Seed Achievement Definitions
+// STEP 4: Seed Achievement Definitions (Upsert pattern)
 // ============================================================================
-echo "<h2>Step 4: Seed Achievement Definitions</h2>";
+section("Step 4: Seed Achievement Definitions", $is_cli);
 
 $achievements = [
-    ['surgical', 'The Surgeon', 'Achieve 100 Headshots in a single tournament event.', 'tactical', 4, 'surgical', 'headshots_tournament', 100, 500],
-    ['unstoppable', 'Unstoppable Force', 'Win 10 matches in a row without a single loss.', 'dedication', 5, 'unstoppable', 'win_streak', 10, 1000],
-    ['survivalist', 'Survivalist', 'Complete a full match with < 10% HP remaining and 0 deaths.', 'hardcore', 3, 'survivalist', 'hp_survival', 1, 250],
-    ['first_blood', 'First Blood', 'Get your first kill.', 'basic', 1, 'blood', 'kills', 1, 10],
-    ['centurion', 'Centurion', 'Reach 100 kills.', 'basic', 2, 'sword', 'kills', 100, 50],
-    ['thousand_souls', '1000 Souls', 'Reach 1000 kills.', 'basic', 3, 'skull', 'kills', 1000, 200],
-    ['headhunter', 'Headhunter', 'Get 50 headshots.', 'precision', 2, 'target', 'headshots', 50, 75],
-    ['sharpshooter', 'Sharpshooter', 'Achieve 50% accuracy over 1000 shots.', 'precision', 3, 'crosshair', 'accuracy', 50, 150],
-    ['marathon', 'Marathon Runner', 'Run 100 kilometers total.', 'movement', 2, 'runner', 'distance', 100000, 50],
-    ['veteran', 'Veteran', 'Play for 24 hours total.', 'dedication', 2, 'medal', 'playtime', 86400, 100],
+    ['code' => 'surgical', 'name' => 'The Surgeon', 'description' => 'Achieve 100 Headshots in a single tournament event.', 'category' => 'tactical', 'tier' => 4, 'icon' => 'surgical', 'requirement_type' => 'headshots_tournament', 'requirement_value' => 100, 'points' => 500],
+    ['code' => 'unstoppable', 'name' => 'Unstoppable Force', 'description' => 'Win 10 matches in a row without a single loss.', 'category' => 'dedication', 'tier' => 5, 'icon' => 'unstoppable', 'requirement_type' => 'win_streak', 'requirement_value' => 10, 'points' => 1000],
+    ['code' => 'survivalist', 'name' => 'Survivalist', 'description' => 'Complete a full match with < 10% HP remaining and 0 deaths.', 'category' => 'hardcore', 'tier' => 3, 'icon' => 'survivalist', 'requirement_type' => 'hp_survival', 'requirement_value' => 1, 'points' => 250],
+    ['code' => 'first_blood', 'name' => 'First Blood', 'description' => 'Get your first kill.', 'category' => 'basic', 'tier' => 1, 'icon' => 'blood', 'requirement_type' => 'kills', 'requirement_value' => 1, 'points' => 10],
+    ['code' => 'centurion', 'name' => 'Centurion', 'description' => 'Reach 100 kills.', 'category' => 'basic', 'tier' => 2, 'icon' => 'sword', 'requirement_type' => 'kills', 'requirement_value' => 100, 'points' => 50],
+    ['code' => 'thousand_souls', 'name' => '1000 Souls', 'description' => 'Reach 1000 kills.', 'category' => 'basic', 'tier' => 3, 'icon' => 'skull', 'requirement_type' => 'kills', 'requirement_value' => 1000, 'points' => 200],
+    ['code' => 'headhunter', 'name' => 'Headhunter', 'description' => 'Get 50 headshots.', 'category' => 'precision', 'tier' => 2, 'icon' => 'target', 'requirement_type' => 'headshots', 'requirement_value' => 50, 'points' => 75],
+    ['code' => 'sharpshooter', 'name' => 'Sharpshooter', 'description' => 'Achieve 50% accuracy over 1000 shots.', 'category' => 'precision', 'tier' => 3, 'icon' => 'crosshair', 'requirement_type' => 'accuracy', 'requirement_value' => 50, 'points' => 150],
+    ['code' => 'marathon', 'name' => 'Marathon Runner', 'description' => 'Run 100 kilometers total.', 'category' => 'movement', 'tier' => 2, 'icon' => 'runner', 'requirement_type' => 'distance', 'requirement_value' => 100000, 'points' => 50],
+    ['code' => 'veteran', 'name' => 'Veteran', 'description' => 'Play for 24 hours total.', 'category' => 'dedication', 'tier' => 2, 'icon' => 'medal', 'requirement_type' => 'playtime', 'requirement_value' => 86400, 'points' => 100],
+    ['code' => 'ghost', 'name' => 'Ghost', 'description' => 'Complete 5 matches with 0 deaths.', 'category' => 'hardcore', 'tier' => 4, 'icon' => 'ghost', 'requirement_type' => 'no_death_matches', 'requirement_value' => 5, 'points' => 300],
+    ['code' => 'rampage', 'name' => 'Rampage', 'description' => 'Get 10 kills without dying.', 'category' => 'combat', 'tier' => 3, 'icon' => 'fire', 'requirement_type' => 'kill_streak', 'requirement_value' => 10, 'points' => 150],
 ];
 
 $inserted = 0;
 foreach ($achievements as $ach) {
-    $smcFunc['db_insert']('ignore',
+    // Use REPLACE to upsert (update if exists, insert if not)
+    $smcFunc['db_insert']('replace',
         '{db_prefix}mohaa_achievement_defs',
-        ['code' => 'string', 'name' => 'string', 'description' => 'string', 'category' => 'string', 
-         'tier' => 'int', 'icon' => 'string', 'requirement_type' => 'string', 
-         'requirement_value' => 'int', 'points' => 'int'],
-        $ach,
-        ['id_achievement']
+        [
+            'code' => 'string', 'name' => 'string', 'description' => 'string', 
+            'category' => 'string', 'tier' => 'int', 'icon' => 'string', 
+            'requirement_type' => 'string', 'requirement_value' => 'int', 'points' => 'int'
+        ],
+        [
+            $ach['code'], $ach['name'], $ach['description'], $ach['category'],
+            $ach['tier'], $ach['icon'], $ach['requirement_type'], 
+            $ach['requirement_value'], $ach['points']
+        ],
+        ['code']
     );
     $inserted++;
 }
 
-echo "<div class='step'><span class='success'>✓</span> Inserted <b>$inserted</b> achievement definitions</div>";
+output("Synced <b>$inserted</b> achievement definitions (insert or update)", 'success', $is_cli);
+$stats['updated']++;
 
 // ============================================================================
 // STEP 5: Verify API Connection
 // ============================================================================
-echo "<h2>Step 5: Verify API Connection</h2>";
+section("Step 5: Verify API Connection", $is_cli);
 
-$api_url = $modSettings['mohaa_api_url'] ?? 'http://localhost:8080/api/v1';
+$api_url = $modSettings['mohaa_api_url'] ?? $settings['mohaa_api_url'];
 $health_url = str_replace('/api/v1', '/health', $api_url);
 
 $ch = curl_init($health_url);
@@ -337,34 +545,61 @@ $response = curl_exec($ch);
 $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 curl_close($ch);
 
-if ($http_code === 200 && strpos($response, 'ok') !== false) {
-    echo "<div class='step'><span class='success'>✓</span> API Connection: <b>OK</b> ($health_url)</div>";
+if ($http_code === 200) {
+    output("API Connection: <b>OK</b> ($health_url)", 'success', $is_cli);
 } else {
-    echo "<div class='step'><span class='warning'>⚠</span> API Connection: <b>FAILED</b> - Make sure Docker is running</div>";
-    echo "<pre>curl http://localhost:8080/health</pre>";
+    output("API Connection: <b>UNAVAILABLE</b> ($health_url) - HTTP $http_code", 'warning', $is_cli);
+    output("This is OK if running before API stack is deployed. Configure API URL in Admin settings.", 'info', $is_cli);
 }
 
 // ============================================================================
 // Summary
 // ============================================================================
-echo "<h2>Installation Summary</h2>";
+section("Installation Summary", $is_cli);
 
-if (empty($errors)) {
-    echo "<div class='step' style='border-color: #4ecca3; background: #1e3a2f;'>";
-    echo "<span class='success'>🎉 Installation Complete!</span><br><br>";
-    echo "All tables, hooks, and settings have been configured.<br><br>";
-    echo "<b>Next Steps:</b><br>";
-    echo "1. Ensure API is running: <code>cd opm-stats-api && docker compose up -d</code><br>";
-    echo "2. Visit: <a href='index.php?action=mohaastats' class='btn'>Stats Dashboard</a>";
-    echo "</div>";
-} else {
-    echo "<div class='step' style='border-color: #ff6b6b;'>";
-    echo "<span class='error'>⚠ Installation completed with errors:</span><br>";
-    foreach ($errors as $error) {
-        echo "- $error<br>";
+if ($is_cli) {
+    echo "\nResults:\n";
+    echo "  Created: {$stats['created']}\n";
+    echo "  Updated: {$stats['updated']}\n";
+    echo "  Skipped: {$stats['skipped']}\n";
+    echo "  Errors:  {$stats['errors']}\n";
+    
+    if (empty($errors)) {
+        echo "\n✓ Installation complete!\n";
+    } else {
+        echo "\n⚠ Completed with errors:\n";
+        foreach ($errors as $error) {
+            echo "  - $error\n";
+        }
     }
-    echo "</div>";
+} else {
+    echo "
+    <table>
+        <tr><th>Metric</th><th>Count</th></tr>
+        <tr><td>Created</td><td>{$stats['created']}</td></tr>
+        <tr><td>Updated</td><td>{$stats['updated']}</td></tr>
+        <tr><td>Skipped (already exists)</td><td>{$stats['skipped']}</td></tr>
+        <tr><td>Errors</td><td>{$stats['errors']}</td></tr>
+    </table>";
+    
+    if (empty($errors)) {
+        echo "<div class='step' style='border-color: #4ecca3; background: #1e3a2f;'>";
+        echo "<span class='success'>🎉 Installation Complete!</span><br><br>";
+        echo "Installer Version: " . MOHAA_INSTALLER_VERSION . "<br><br>";
+        echo "<b>Quick Links:</b><br>";
+        echo "<a href='index.php?action=mohaadashboard' class='btn'>Stats Dashboard</a>";
+        echo "<a href='index.php?action=mohaaachievements' class='btn'>Achievements</a>";
+        echo "<a href='index.php?action=mohaatournaments' class='btn'>Tournaments</a>";
+        echo "</div>";
+    } else {
+        echo "<div class='step error'>";
+        echo "<span class='error'>⚠ Completed with errors:</span><br>";
+        foreach ($errors as $error) {
+            echo "- $error<br>";
+        }
+        echo "</div>";
+    }
+    
+    echo "</div></body></html>";
 }
-
-echo "</div></body></html>";
 ?>
