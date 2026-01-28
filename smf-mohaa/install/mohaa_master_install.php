@@ -422,6 +422,33 @@ function buildColumnSQL($name, $def) {
 // Set ?skip_force=1 to only add missing columns instead
 $forceRebuild = !isset($_GET['skip_force']);
 
+// ============================================================================
+// STEP 0.5: Schema Migrations (Column Renames)
+// ============================================================================
+section("Step 0.5: Schema Migrations", $is_cli);
+
+// Migration: Rename linked_date to linked_at in mohaa_identities
+if (tableExists('mohaa_identities')) {
+    $existingCols = getExistingColumns('mohaa_identities');
+    if (isset($existingCols['linked_date']) && !isset($existingCols['linked_at'])) {
+        try {
+            $smcFunc['db_query']('', "
+                ALTER TABLE {db_prefix}mohaa_identities 
+                CHANGE COLUMN linked_date linked_at INT UNSIGNED DEFAULT 0",
+                []
+            );
+            output("Renamed column: <b>mohaa_identities.linked_date</b> → <b>linked_at</b>", 'success', $is_cli);
+            $stats['updated']++;
+        } catch (Exception $e) {
+            output("Failed to rename linked_date: " . $e->getMessage(), 'error', $is_cli);
+            $errors[] = "Rename linked_date: " . $e->getMessage();
+            $stats['errors']++;
+        }
+    } else {
+        output("Column <b>mohaa_identities.linked_at</b> already exists or linked_date not found", 'skip', $is_cli);
+    }
+}
+
 // Process each table
 foreach ($tables as $tableName => $tableSpec) {
     $fullTableName = str_replace('{db_prefix}', $db_prefix, '{db_prefix}' . $tableName);
