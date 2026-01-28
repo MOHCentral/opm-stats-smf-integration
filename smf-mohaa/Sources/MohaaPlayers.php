@@ -655,7 +655,7 @@ function MohaaPlayers_GetLinkedGUID(int $memberId): ?string
         SELECT player_guid
         FROM {db_prefix}mohaa_identities
         WHERE id_member = {int:member}
-        ORDER BY linked_date DESC
+        ORDER BY linked_at DESC
         LIMIT 1',
         [
             'member' => $memberId,
@@ -701,10 +701,10 @@ function MohaaPlayers_GetAllIdentities(int $memberId): array
     $identities = [];
     
     $request = $smcFunc['db_query']('', '
-        SELECT id_identity, player_guid, player_name, linked_date
+        SELECT id AS id_identity, player_guid, player_name, linked_at
         FROM {db_prefix}mohaa_identities
         WHERE id_member = {int:member}
-        ORDER BY linked_date DESC',
+        ORDER BY linked_at DESC',
         [
             'member' => $memberId,
         ]
@@ -728,7 +728,7 @@ function MohaaPlayers_UnlinkIdentity(int $memberId, int $identityId): void
     
     $smcFunc['db_query']('', '
         DELETE FROM {db_prefix}mohaa_identities
-        WHERE id_identity = {int:identity}
+        WHERE id = {int:identity}
             AND id_member = {int:member}',
         [
             'identity' => $identityId,
@@ -746,7 +746,7 @@ function MohaaPlayers_LinkIdentity(int $memberId, string $guid, string $playerNa
     
     // Check if already linked
     $request = $smcFunc['db_query']('', '
-        SELECT id_identity
+        SELECT id
         FROM {db_prefix}mohaa_identities
         WHERE player_guid = {string:guid}',
         [
@@ -773,12 +773,12 @@ function MohaaPlayers_LinkIdentity(int $memberId, string $guid, string $playerNa
             $memberId,
             $guid,
             $playerName,
-            time(),
+            date("Y-m-d H:i:s"),
         ],
-        ['id_identity']
+        ['id']
     );
     
-    return $smcFunc['db_insert_id']('{db_prefix}mohaa_identities');
+    return $smcFunc['db_insert_id']('{db_prefix}mohaa_identities', 'id');
 }
 
 /**
@@ -867,33 +867,53 @@ function MohaaPlayers_MenuButtons(array &$buttons): void
             'href' => $scripturl . '?action=mohaadashboard',
             'show' => true,
             'sub_buttons' => [
-                'dashboard' => [
-                    'title' => $txt['mohaa_dashboard'],
+                'warroom' => [
+                    'title' => $txt['mohaa_war_room'] ?? 'War Room',
                     'href' => $scripturl . '?action=mohaadashboard',
                     'show' => true,
                 ],
-                'leaderboards' => [
-                    'title' => $txt['mohaa_leaderboards'],
+                'leaderboard' => [
+                    'title' => $txt['mohaa_leaderboards'] ?? 'Leaderboard',
                     'href' => $scripturl . '?action=mohaastats;sa=leaderboards',
                     'show' => true,
                 ],
-                'matches' => [
-                    'title' => $txt['mohaa_matches'],
-                    'href' => $scripturl . '?action=mohaamatches',
+                'battles' => [
+                    'title' => $txt['mohaa_battles'] ?? 'Battles',
+                    'href' => $scripturl . '?action=mohaastats;sa=battles',
+                    'show' => true,
+                ],
+                'livematches' => [
+                    'title' => $txt['mohaa_live_matches'] ?? 'Live Matches',
+                    'href' => $scripturl . '?action=mohaastats;sa=live',
                     'show' => true,
                 ],
                 'servers' => [
-                    'title' => $txt['mohaa_servers'],
+                    'title' => $txt['mohaa_servers'] ?? 'Servers',
                     'href' => $scripturl . '?action=mohaaservers',
                     'show' => true,
                 ],
+                'maps' => [
+                    'title' => $txt['mohaa_maps'] ?? 'Maps',
+                    'href' => $scripturl . '?action=mohaastats;sa=maps',
+                    'show' => true,
+                ],
+                'weapons' => [
+                    'title' => $txt['mohaa_weapons'] ?? 'Weapons',
+                    'href' => $scripturl . '?action=mohaastats;sa=weapons',
+                    'show' => true,
+                ],
+                'gametypes' => [
+                    'title' => $txt['mohaa_gametypes'] ?? 'Game Types',
+                    'href' => $scripturl . '?action=mohaastats;sa=gametypes',
+                    'show' => true,
+                ],
                 'achievements' => [
-                    'title' => $txt['mohaa_achievements'],
+                    'title' => $txt['mohaa_achievements'] ?? 'Achievements',
                     'href' => $scripturl . '?action=mohaaachievements',
                     'show' => true,
                 ],
                 'tournaments' => [
-                    'title' => $txt['mohaa_tournaments'],
+                    'title' => $txt['mohaa_tournaments'] ?? 'Tournaments',
                     'href' => $scripturl . '?action=mohaatournaments',
                     'show' => true,
                 ],
@@ -902,7 +922,17 @@ function MohaaPlayers_MenuButtons(array &$buttons): void
                     'href' => $scripturl . '?action=mohaateams',
                     'show' => true,
                 ],
-                'link_account' => [
+                'comparison' => [
+                    'title' => $txt['mohaa_comparison'] ?? 'Player Comparison',
+                    'href' => $scripturl . '?action=mohaastats;sa=comparison',
+                    'show' => true,
+                ],
+                'predictions' => [
+                    'title' => $txt['mohaa_predictions'] ?? 'AI Predictions',
+                    'href' => $scripturl . '?action=mohaastats;sa=predictions',
+                    'show' => true,
+                ],
+                'identity' => [
                     'title' => $txt['mohaa_link_account'] ?? 'Link Account',
                     'href' => $scripturl . '?action=mohaaidentity',
                     'show' => !$user_info['is_guest'],
