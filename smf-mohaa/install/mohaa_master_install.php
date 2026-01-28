@@ -38,6 +38,14 @@ if (!$ssi_found && !defined('SMF')) {
 
 global $smcFunc, $modSettings, $db_prefix, $sourcedir, $db_connection;
 
+// Load database packages functions (db_create_table, db_add_column, etc.)
+// SSI.php only loads basic CRUD - package functions are in Subs-DbPackages.php
+if (!empty($sourcedir) && file_exists($sourcedir . '/Subs-DbPackages.php')) {
+    require_once($sourcedir . '/Subs-DbPackages.php');
+} elseif (file_exists('/var/www/html/Sources/Subs-DbPackages.php')) {
+    require_once('/var/www/html/Sources/Subs-DbPackages.php');
+}
+
 // Installer version - increment when schema changes
 define('MOHAA_INSTALLER_VERSION', '2.0.0');
 
