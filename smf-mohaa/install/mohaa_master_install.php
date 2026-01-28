@@ -39,11 +39,14 @@ if (!$ssi_found && !defined('SMF')) {
 global $smcFunc, $modSettings, $db_prefix, $sourcedir, $db_connection;
 
 // Load database packages functions (db_create_table, db_add_column, etc.)
-// SSI.php only loads basic CRUD - package functions are in Subs-DbPackages.php
-if (!empty($sourcedir) && file_exists($sourcedir . '/Subs-DbPackages.php')) {
-    require_once($sourcedir . '/Subs-DbPackages.php');
-} elseif (file_exists('/var/www/html/Sources/Subs-DbPackages.php')) {
-    require_once('/var/www/html/Sources/Subs-DbPackages.php');
+// SSI.php only loads basic CRUD - package functions are in DbPackages-mysql.php
+// We must require the file AND call db_packages_init() to load functions into $smcFunc
+if (!empty($sourcedir) && file_exists($sourcedir . '/DbPackages-mysql.php')) {
+    require_once($sourcedir . '/DbPackages-mysql.php');
+    db_packages_init();
+} elseif (file_exists('/var/www/html/Sources/DbPackages-mysql.php')) {
+    require_once('/var/www/html/Sources/DbPackages-mysql.php');
+    db_packages_init();
 }
 
 // Installer version - increment when schema changes
