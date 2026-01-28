@@ -32,7 +32,7 @@ ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO smf_settings (variable, value) VALUES 
     ('mohaa_stats_installed', '1'),
     ('mohaa_stats_enabled', '1'),
-    ('mohaa_stats_api_url', 'http://localhost:8080'),
+    ('mohaa_stats_api_url', 'http://localhost:8084'),
     ('mohaa_stats_cache_ttl', '300')
 ON DUPLICATE KEY UPDATE value = VALUES(value);
 

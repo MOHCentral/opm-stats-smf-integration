@@ -8,7 +8,7 @@
 -- Update API URL for production (internal Docker network)
 -- Change this URL to match your production API endpoint
 UPDATE smf_settings 
-SET value = 'http://opm-stats-api:8080' 
+SET value = 'http://opm-stats-api:8084' 
 WHERE variable = 'mohaa_stats_api_url';
 
 -- If using external/public API URL instead, use this:
