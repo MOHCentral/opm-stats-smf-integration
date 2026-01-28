@@ -846,7 +846,7 @@ function MohaaPlayers_Matches(): void
  */
 function MohaaPlayers_MenuButtons(array &$buttons): void
 {
-    global $txt, $scripturl, $modSettings;
+    global $txt, $scripturl, $modSettings, $user_info;
 
     /*
     if (empty($modSettings['mohaa_stats_enabled']))
@@ -899,6 +899,16 @@ function MohaaPlayers_MenuButtons(array &$buttons): void
                     'title' => $txt['mohaa_tournaments'],
                     'href' => $scripturl . '?action=mohaatournaments',
                     'show' => true,
+                ],
+                'teams' => [
+                    'title' => $txt['mohaa_teams'] ?? 'Teams',
+                    'href' => $scripturl . '?action=mohaateams',
+                    'show' => true,
+                ],
+                'link_account' => [
+                    'title' => $txt['mohaa_link_account'] ?? 'Link Account',
+                    'href' => $scripturl . '?action=mohaaidentity',
+                    'show' => !$user_info['is_guest'],
                 ],
             ],
             'is_last' => true,
