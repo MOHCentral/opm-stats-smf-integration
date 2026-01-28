@@ -275,10 +275,7 @@ function MohaaPlayers_Dashboard(): void
 {
     global $context, $txt, $user_info, $scripturl;
     
-    if ($user_info['is_guest']) {
-        redirectexit('action=login');
-        return;
-    }
+
     
     loadLanguage('MohaaStats');
     loadTemplate('MohaaWarRoom');
@@ -877,7 +874,7 @@ function MohaaPlayers_MenuButtons(array &$buttons): void
                 ],
                 'leaderboards' => [
                     'title' => $txt['mohaa_leaderboards'],
-                    'href' => $scripturl . '?action=mohaaleaderboard',
+                    'href' => $scripturl . '?action=mohaastats;sa=leaderboards',
                     'show' => true,
                 ],
                 'matches' => [
