@@ -126,6 +126,7 @@ class MohaaStatsAPIClient
     public function getMatchDetails(string $matchId): ?array { return $this->get('/stats/match/' . urlencode($matchId)); }
     public function getLiveMatches(): ?array { $orig = $this->cacheDuration; $this->cacheDuration = 10; $data = $this->get('/stats/live/matches'); $this->cacheDuration = $orig; return $data; }
     public function getMapStats(): ?array { return $this->get('/stats/maps'); }
+    public function getMaps(): ?array { return $this->getMapStats(); } // Alias
     public function getMapDetails(string $mapId): ?array { return $this->get('/stats/map/' . urlencode($mapId)); }
     public function getMapHeatmap(string $mapId, string $type = 'kills'): ?array { return $this->get('/stats/map/' . urlencode($mapId) . '/heatmap', ['type'=>$type]); }
     public function getMapsList(): ?array { return $this->get('/stats/maps/list'); }
@@ -133,12 +134,14 @@ class MohaaStatsAPIClient
     
     // Game Type Stats (derived from map prefixes dynamically)
     public function getGameTypeStats(): ?array { return $this->get('/stats/gametypes'); }
+    public function getGameTypes(): ?array { return $this->getGameTypeStats(); } // Alias
     public function getGameTypesList(): ?array { return $this->get('/stats/gametypes/list'); }
     public function getGameTypeDetails(string $gameType): ?array { return $this->get('/stats/gametype/' . urlencode($gameType)); }
     public function getGameTypeLeaderboard(string $gameType, int $limit = 25): ?array { return $this->get('/stats/leaderboard/gametype/' . urlencode($gameType), ['limit' => $limit]); }
     
     // Weapon Stats
     public function getGlobalWeaponStats(): ?array { return $this->get('/stats/weapons'); }
+    public function getWeapons(): ?array { return $this->getGlobalWeaponStats(); } // Alias
     public function getWeaponsList(): ?array { return $this->get('/stats/weapons/list'); }
     public function getWeaponDetails(string $weaponId): ?array { return $this->get('/stats/weapon/' . urlencode($weaponId)); }
     public function getWeaponStats(string $weaponId): ?array { return $this->getWeaponDetails($weaponId); } // Alias
