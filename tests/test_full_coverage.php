@@ -94,6 +94,12 @@ foreach ($methods as $method => $args) {
     echo "\nTesting $method...\n";
     $result = call_user_func_array([$api, $method], $args);
     assertNotNull($result, "$method result");
+
+    if ($method === 'getGlobalStats') {
+        assertType($result['total_kills'], 'int', 'total_kills');
+        assertType($result['total_players'], 'int', 'total_players');
+    }
+
     if (is_array($result) && !empty($result)) {
         echo "[INFO] $method returned data\n";
     } elseif (is_int($result)) {
