@@ -132,32 +132,76 @@ function template_mohaa_war_room()
                     <h1>', htmlspecialchars($member['real_name'] ?? $member['member_name'] ?? 'Soldier'), '</h1>
                     <div class="profile-meta">
                         <span class="tag-badge">', htmlspecialchars($player['clan_tag'] ?? 'N/A'), '</span>
-                        <span>ELO: <strong>', number_format($player['elo'] ?? 0), '</strong></span>
+                        <span class="drill-clickable" data-stat="elo" data-dimension="history">ELO: <strong>', number_format($player['elo'] ?? 0), '</strong></span>
                     </div>
                 </div>
                 
                 <div class="header-stats">
-                    <div class="mini-stat">
+                    <div class="mini-stat drill-clickable" data-stat="kills" data-dimension="weapon">
                         <span class="value">'.number_format($player['kills'] ?? 0).'</span>
                         <span class="label">Kills</span>
                     </div>
-                    <div class="mini-stat">
+                    <div class="mini-stat drill-clickable" data-stat="deaths" data-dimension="weapon">
                         <span class="value">'.number_format($player['deaths'] ?? 0).'</span>
                         <span class="label">Deaths</span>
                     </div>
-                    <div class="mini-stat">
+                    <div class="mini-stat drill-clickable" data-stat="kd" data-dimension="map">
                         <span class="value">
                             '.number_format(($player['kills'] ?? 0) / max(1, $player['deaths'] ?? 1), 2).'
                         </span>
                         <span class="label">K/D</span>
                     </div>
-                    <div class="mini-stat">
+                    <div class="mini-stat drill-clickable" data-stat="matches" data-dimension="gametype">
                         <span class="value">'.number_format($player['matches_won'] ?? 0).'</span>
                         <span class="label">Wins</span>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Drill-down Modal -->
+        <div id="mohaa-drilldown-modal" class="drilldown-modal" style="display: none;">
+            <div class="tborder">
+                <div class="titlebg drilldown-modal-header" style="padding: 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <span id="drilldown-title">Stat Breakdown</span>
+                    <a href="javascript:void(0)" onclick="closeDrilldown()" style="color: #fff; text-decoration: none; font-weight: bold;">✕</a>
+                </div>
+                <div class="windowbg drilldown-modal-content" style="padding: 20px;">
+                    <div id="drilldown-loading" style="text-align: center; padding: 40px;">
+                        <div class="spinner"></div>
+                        <p style="margin-top: 10px; opacity: 0.7;">Analysing performance data...</p>
+                    </div>
+                    <div id="drilldown-canvas" style="min-height: 300px; display: none;"></div>
+                    <div id="drilldown-table" style="margin-top: 20px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <style>
+            .drill-clickable { cursor: pointer; transition: transform 0.1s; }
+            .drill-clickable:hover { transform: scale(1.05); color: #557ea0; }
+            .drilldown-modal {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 700px;
+                max-width: 90%;
+                z-index: 9999;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            }
+            .drilldown-modal-header { font-weight: bold; }
+            .spinner {
+                border: 4px solid rgba(0,0,0,0.1);
+                border-left-color: #557ea0;
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                animation: spin 1s linear infinite;
+                margin: 0 auto;
+            }
+            @keyframes spin { to { transform: rotate(360deg); } }
+        </style>
 
         <!-- Navigation Tabs -->
         <div class="mohaa-tabs">
@@ -170,6 +214,7 @@ function template_mohaa_war_room()
             <a href="#" onclick="showTab(\'gameflow\'); return false;" class="mohaa-tab">🎮 Game</a>
             <a href="#" onclick="showTab(\'gametypes\'); return false;" class="mohaa-tab">🕹️ Game Types</a>
             <a href="#" onclick="showTab(\'interaction\'); return false;" class="mohaa-tab">🗣️ Interaction</a>
+            <a href="#" onclick="showTab(\'teams\'); return false;" class="mohaa-tab">👥 Teams</a>
             <a href="#" onclick="showTab(\'maps\'); return false;" class="mohaa-tab">🗺️ Maps</a>
             <a href="#" onclick="showTab(\'matches\'); return false;" class="mohaa-tab">📊 Matches</a>
             <a href="#" onclick="showTab(\'achievements\'); return false;" class="mohaa-tab">🏆 Medals</a>
@@ -404,6 +449,14 @@ function template_mohaa_war_room()
 
         
         <!-- ======================= MAPS TAB ======================= -->
+        <div id="tab-teams" class="tab-content" style="display: none;">
+            ', template_war_room_team_content($player['team_history'] ?? []), '
+        </div>
+
+        <div id="tab-teams" class="tab-content" style="display: none;">
+            ', template_war_room_team_content($player['team_history'] ?? []), '
+        </div>
+
         <div id="tab-maps" class="tab-content" style="display: none;">
             <div class="windowbg stat-card">
                 <h3>Map Performance</h3>
@@ -431,6 +484,26 @@ function template_mohaa_war_room()
 
     </div>
 
+    <!-- Heatmap Modal -->
+    <div id="mohaa-heatmap-modal" class="drilldown-modal" style="display: none; width: 850px;">
+        <div class="tborder">
+            <div class="titlebg" style="padding: 10px; display: flex; justify-content: space-between; align-items: center;">
+                <span id="heatmap-title">Map Combat Heatmap</span>
+                <a href="javascript:void(0)" onclick="closeHeatmap()" style="color: #fff; text-decoration: none; font-weight: bold;">✕</a>
+            </div>
+            <div class="windowbg" style="padding: 10px; position: relative;">
+                <div id="heatmap-container" style="position: relative; width: 100%; height: 600px; background: #000; overflow: hidden; border-radius: 4px;">
+                    <img id="heatmap-map-img" src="" style="width: 100%; height: 100%; object-fit: contain; opacity: 0.6;" />
+                    <div id="heatmap-canvas-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
+                </div>
+                <div style="margin-top: 10px; display: flex; gap: 10px; justify-content: center;">
+                    <button class="button active" onclick="loadHeatmapData(\'kills\')">Kills</button>
+                    <button class="button" onclick="loadHeatmapData(\'deaths\')">Deaths</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Pass Data to JS -->
     <script>
         window.mohaaData = ' . json_encode($context['mohaa_dashboard'], JSON_PARTIAL_OUTPUT_ON_ERROR | JSON_UNESCAPED_UNICODE) . ';
@@ -443,7 +516,159 @@ function template_mohaa_war_room()
             }
         });
         
+        let drilldownChart = null;
+
+        function openDrilldown(stat, dim) {
+            const modal = document.getElementById("mohaa-drilldown-modal");
+            const loading = document.getElementById("drilldown-loading");
+            const canvas = document.getElementById("drilldown-canvas");
+            const table = document.getElementById("drilldown-table");
+            const title = document.getElementById("drilldown-title");
+
+            modal.style.display = "block";
+            loading.style.display = "block";
+            canvas.style.display = "none";
+            table.innerHTML = "";
+            title.innerText = `Breakdown: ${stat} by ${dim}`;
+
+            if (drilldownChart) {
+                drilldownChart.destroy();
+                drilldownChart = null;
+            }
+
+            const guid = window.mohaaData.player_stats.guid || "";
+            fetch(`${smf_scripturl}?action=mohaadrilldown;stat=${stat};dimension=${dim};guid=${guid}`)
+                .then(res => res.json())
+                .then(data => {
+                    loading.style.display = "none";
+                    canvas.style.display = "block";
+
+                    if (!data.breakdown || data.breakdown.length === 0) {
+                        canvas.innerHTML = "<p style=\"text-align: center; padding: 40px; opacity: 0.6;\">No detailed data available for this dimension.</p>";
+                        return;
+                    }
+
+                    renderDrilldownChart(data.breakdown, stat, dim);
+                    renderDrilldownTable(data.breakdown, stat, dim);
+                })
+                .catch(err => {
+                    console.error("Drill-down error:", err);
+                    loading.innerHTML = "<p style=\"color: #f44336;\">Failed to load analyst data.</p>";
+                });
+        }
+
+        function closeDrilldown() {
+            document.getElementById("mohaa-drilldown-modal").style.display = "none";
+        }
+
+        function renderDrilldownChart(breakdown, stat, dim) {
+            const labels = breakdown.map(b => b.key);
+            const values = breakdown.map(b => b.value);
+
+            const options = {
+                series: [{ name: stat.toUpperCase(), data: values }],
+                chart: { type: "bar", height: 300, toolbar: { show: false }, background: "transparent" },
+                plotOptions: { bar: { borderRadius: 4, horizontal: true } },
+                dataLabels: { enabled: true },
+                xaxis: { categories: labels, labels: { style: { colors: "#888" } } },
+                yaxis: { labels: { style: { colors: "#888" } } },
+                theme: { mode: "dark" },
+                colors: ["#557ea0"]
+            };
+
+            drilldownChart = new ApexCharts(document.querySelector("#drilldown-canvas"), options);
+            drilldownChart.render();
+        }
+
+        function renderDrilldownTable(breakdown, stat, dim) {
+            let html = `<table class="clean-table"><thead><tr><th>${dim.toUpperCase()}</th><th>${stat.toUpperCase()}</th></tr></thead><tbody>`;
+            breakdown.forEach(b => {
+                html += `<tr><td>${b.key}</td><td><strong>${b.value}</strong></td></tr>`;
+            });
+            html += "</tbody></table>";
+            document.getElementById("drilldown-table").innerHTML = html;
+        }
+
+        });
+
+        let heatmapInstance = null;
+        let activeHeatmapMap = "";
+
+        function openHeatmap(mapName) {
+            activeHeatmapMap = mapName;
+            const modal = document.getElementById("mohaa-heatmap-modal");
+            const img = document.getElementById("heatmap-map-img");
+            const title = document.getElementById("heatmap-title");
+            
+            modal.style.display = "block";
+            title.innerText = `Combat Heatmap: ${mapName}`;
+            img.src = `Themes/default/images/mohaa/maps/${mapName.toLowerCase()}.jpg`;
+            
+            loadHeatmapData("kills");
+        }
+
+        function closeHeatmap() {
+            document.getElementById("mohaa-heatmap-modal").style.display = "none";
+        }
+
+        function loadHeatmapData(type) {
+            const container = document.getElementById("heatmap-canvas-container");
+            container.innerHTML = "";
+            
+            // Re-init heatmap.js instance on the container
+            heatmapInstance = h337.create({
+                container: container,
+                radius: 30,
+                maxOpacity: 0.6,
+                minOpacity: 0,
+                blur: 0.75
+            });
+
+            const guid = window.mohaaData.player_stats.guid || "";
+            // Simplified URL for now, real endpoint might need mapName
+            fetch(`${smf_scripturl}?action=mohaamapstats;sa=heatmap;map=${activeHeatmapMap};type=${type};guid=${guid}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.points && data.points.length > 0) {
+                        heatmapInstance.setData({
+                            max: 10,
+                            data: data.points.map(p => ({
+                                x: Math.floor(p.x_pct * container.offsetWidth / 100),
+                                y: Math.floor(p.y_pct * container.offsetHeight / 100),
+                                value: p.weight || 1
+                            }))
+                        });
+                    }
+                });
+        }
+
         function initWarRoomCharts() {
+            // Register heatmap triggers
+            document.querySelectorAll(".heatmap-trigger").forEach(btn => {
+                btn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    openHeatmap(btn.getAttribute("data-map"));
+                });
+            });
+
+            // Register drill-down clicks
+            document.querySelectorAll(".drill-clickable").forEach(el => {
+                el.addEventListener("click", () => {
+                    const stat = el.getAttribute("data-stat");
+                    const dim = el.getAttribute("data-dimension");
+                    openDrilldown(stat, dim);
+                });
+            });
+
+            // Peak tab drilldowns
+            document.querySelectorAll(".drilldown-stat").forEach(el => {
+                el.addEventListener("click", () => {
+                    const stat = el.getAttribute("data-stat");
+                    const dim = el.getAttribute("data-dimension");
+                    openDrilldown(stat, dim);
+                });
+            });
+
             const data = window.mohaaData || {};
             if (!data) {
                 console.warn("No mohaaData available");
@@ -579,17 +804,17 @@ function template_mohaa_war_room()
             // 4. Skill Spider (Radar) - NEW
             const spiderCtx = document.querySelector("#chart-skill-spider");
             if (spiderCtx) {
-                // Calculate skill values from player stats (0-100 scale)
-                const accuracy = Math.min(100, (player.accuracy || 0) * 2.5); // 40% acc = 100 score
-                const aggression = Math.min(100, ((player.kills || 0) / Math.max(1, player.playtime_hours || 1)) * 10); // Kills per hour
-                const survival = Math.min(100, (player.kd_ratio || 1) * 30); // 3.0 KD = 90
-                const movement = Math.min(100, ((player.distance_km || 0) / Math.max(1, player.playtime_hours || 1)) * 5); // KM per hour
-                const clutch = Math.min(100, ((player.clutch_wins || 0) / Math.max(1, (player.clutch_total || 1))) * 100); // Clutch win %
+                // Expanded Player DNA Metrics
+                const surgical = Math.min(100, (player.marksman_index || 0) * 100); // Headshot weight
+                const unstoppable = Math.min(100, (player.best_killstreak || 0) * 5); // 20 streak = 100
+                const survivalist = Math.min(100, (player.survival_rate || 0) * 100); 
+                const tactical = Math.min(100, (player.objective_focus || 0) * 100);
+                const consistency = Math.min(100, (player.consistency_score || 0) * 100);
                 
                 const options = {
                     series: [{
                         name: "You",
-                        data: [accuracy, aggression, survival, movement, clutch]
+                        data: [surgical, unstoppable, survivalist, tactical, consistency]
                     }],
                     chart: { 
                         type: "radar", 
@@ -598,11 +823,11 @@ function template_mohaa_war_room()
                         toolbar: { show: false }
                     },
                     xaxis: { 
-                        categories: ["Accuracy", "Aggression", "Survival", "Movement", "Clutch"],
+                        categories: ["Surgical", "Unstoppable", "Survivalist", "Tactical", "Consistency"],
                         labels: { 
                             style: { 
-                                colors: ["#4caf50", "#ff9800", "#2196f3", "#9c27b0", "#f44336"],
-                                fontSize: "12px",
+                                colors: ["#f44336", "#ff9800", "#4caf50", "#2196f3", "#9c27b0"],
+                                fontSize: "11px",
                                 fontWeight: "bold"
                             } 
                         }
@@ -1571,6 +1796,9 @@ function template_war_room_maps_content($maps, $player) {
             </td>
             <td style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05);">'.number_format($kills).'</td>
             <td style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05);">'.number_format($kd, 2).'</td>
+            <td style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <button type="button" class="heatmap-trigger button" data-map="'.htmlspecialchars($m['map_name']).'" style="font-size: 0.7em; padding: 4px 8px;">View Heatmap</button>
+            </td>
         </tr>';
     }
     
@@ -1580,12 +1808,8 @@ function template_war_room_maps_content($maps, $player) {
             <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
                 <thead>
                     <tr style="text-align: left; color: rgba(255,255,255,0.5); font-size: 0.85em; text-transform: uppercase;">
-                        <th style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">Map</th>
-                        <th style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">Matches</th>
-                        <th style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">Wins</th>
-                        <th style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">Win Rate</th>
-                        <th style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">Kills</th>
                         <th style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">K/D</th>
+                        <th style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">Overlay</th>
                     </tr>
                 </thead>
                 <tbody>
