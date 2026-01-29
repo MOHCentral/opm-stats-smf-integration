@@ -36,195 +36,125 @@ function template_mohaa_war_room()
     echo '
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <style>
-        :root {
-            --mohaa-accent: #4a6b8a; /* Soft blue-grey */
-            --mohaa-success: #4caf50;
-            --mohaa-warning: #ff9800;
-            --mohaa-danger: #f44336;
-            --mohaa-card-bg: rgba(255,255,255,0.05); /* Slight tint for cards */
-        }
-        
-        .mohaa-dashboard-container {
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-            margin-bottom: 20px;
-        }
-
-        /* Stats Grid System */
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <style>
+        .mohaa-dashboard-container { padding: 10px; }
         .mohaa-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
+            gap: 15px;
+            margin-top: 15px;
         }
-        
-        /* Dashboard Card Style */
         .stat-card {
-            background: var(--mohaa-card-bg); /* Fallback or override if windowbg is not enough */
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            transition: transform 0.2s ease;
+            padding: 15px;
             height: 100%;
             display: flex;
             flex-direction: column;
         }
-        
-        .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-        
         .stat-card h3 {
             margin: 0 0 15px 0;
-            padding-bottom: 10px;
-            border-bottom: 2px solid var(--mohaa-accent);
+            padding-bottom: 5px;
+            border-bottom: 1px solid #ccc;
             font-size: 1.1em;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: inherit; /* Inherit from theme */
-            opacity: 0.9;
-        }
-        
-        /* Header Profile */
-        .profile-header {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 20px;
-            padding: 25px;
-            background: linear-gradient(135deg, rgba(0,0,0,0.1), rgba(0,0,0,0));
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-        
-        .rank-icon { font-size: 3.5em; line-height: 1; }
-        
-        .profile-info h1 { margin: 0; font-size: 2em; line-height: 1.2; }
-        .profile-meta { opacity: 0.7; font-size: 0.9em; }
-        .tag-badge { 
-            background: var(--mohaa-accent); 
-            color: #fff; 
-            padding: 2px 8px; 
-            border-radius: 4px; 
             font-weight: bold;
         }
-        
-        .header-stats {
+        .profile-header {
             display: flex;
-            gap: 15px;
+            align-items: center;
+            padding: 15px;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+        .rank-icon {
+            font-size: 3.5em;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .profile-info h1 { margin: 0; font-size: 1.8em; }
+        .profile-meta { margin-top: 5px; display: flex; gap: 10px; align-items: center; }
+        .tag-badge {
+            background: #eee;
+            color: #333;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-weight: bold;
+            font-size: 0.8em;
+            border: 1px solid #ccc;
+        }
+        .header-stats {
             margin-left: auto;
+            display: flex;
+            gap: 20px;
+            align-items: center;
         }
-        
-        .mini-stat {
-            text-align: center;
-            padding: 10px 15px;
-            border-radius: 6px;
-            background: rgba(0,0,0,0.2); /* Darker for contrast */
-            min-width: 80px;
-        }
-        
+        .mini-stat { text-align: center; }
         .mini-stat .value { display: block; font-size: 1.4em; font-weight: bold; }
-        .mini-stat .label { font-size: 0.7em; text-transform: uppercase; opacity: 0.8; }
+        .mini-stat .label { font-size: 0.75em; text-transform: uppercase; color: #666; }
         
-        /* Tabs */
         .mohaa-tabs {
             display: flex;
-            gap: 5px;
-            border-bottom: 2px solid var(--mohaa-accent);
-            margin-bottom: 20px;
+            gap: 2px;
+            border-bottom: 1px solid #ccc;
+            margin-bottom: 15px;
             overflow-x: auto;
         }
-        
         .mohaa-tab {
-            padding: 12px 20px;
-            background: rgba(0,0,0,0.1);
-            border-radius: 8px 8px 0 0;
+            padding: 8px 15px;
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
             cursor: pointer;
             font-weight: bold;
             text-decoration: none;
-            color: inherit;
-            transition: all 0.2s;
+            color: #444;
             white-space: nowrap;
         }
-        
-        .mohaa-tab:hover { background: rgba(0,0,0,0.2); text-decoration: none; }
-        .mohaa-tab.active {
-            background: var(--mohaa-accent);
-            color: #fff;
-        }
+        .mohaa-tab:hover { background: #e0e0e0; text-decoration: none; }
+        .mohaa-tab.active { background: #fff; color: #000; border-top: 2px solid #557ea0; }
 
-        /* Component Specifics */
-        .gauge-svg { width: 100%; height: auto; max-height: 150px; }
-        
-        .weapon-list-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 15px;
-        }
-        
-        .weapon-card {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 15px;
-            background: rgba(0,0,0,0.05);
-            border-radius: 8px;
-            border: 1px solid rgba(0,0,0,0.1);
-        }
-        
-        .map-card-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-        }
-        
-        .streak-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .streak-item { text-align: center; padding: 10px; background: rgba(0,0,0,0.05); border-radius: 6px; }
-        
-        /* Clean Tables */
         .clean-table { width: 100%; border-collapse: collapse; }
-        .clean-table th { text-align: left; padding: 12px; border-bottom: 2px solid rgba(0,0,0,0.1); opacity: 0.7; }
-        .clean-table td { padding: 12px; border-bottom: 1px solid rgba(0,0,0,0.05); }
-        .clean-table tr:hover td { background: rgba(0,0,0,0.02); }
+        .clean-table th { text-align: left; padding: 8px; border-bottom: 2px solid #ccc; font-size: 0.85em; }
+        .clean-table td { padding: 8px; border-bottom: 1px solid #eee; }
     </style>
     
     <div class="mohaa-dashboard-container">
         <!-- Header -->
-        <div class="windowbg profile-header">
-            <div class="rank-icon">
-                ', template_war_room_rank_icon($player['kills'] ?? 0), '
-            </div>
-            <div class="profile-info">
-                <h1>', htmlspecialchars($member['real_name'] ?? $member['member_name'] ?? 'Soldier'), '</h1>
-                <div class="profile-meta">
-                    <span class="tag-badge">', htmlspecialchars($player['clan_tag'] ?? 'N/A'), '</span>
-                    <span>ELO: <strong>', number_format($player['elo'] ?? 0), '</strong></span>
+        <div class="tborder">
+            <div class="windowbg profile-header">
+                <div class="rank-icon">
+                    ', template_war_room_rank_icon($player['kills'] ?? 0), '
                 </div>
-            </div>
-            
-            <div class="header-stats">
-                <div class="mini-stat">
-                    <span class="value">'.number_format($player['kills'] ?? 0).'</span>
-                    <span class="label">Kills</span>
+                <div class="profile-info">
+                    <h1>', htmlspecialchars($member['real_name'] ?? $member['member_name'] ?? 'Soldier'), '</h1>
+                    <div class="profile-meta">
+                        <span class="tag-badge">', htmlspecialchars($player['clan_tag'] ?? 'N/A'), '</span>
+                        <span>ELO: <strong>', number_format($player['elo'] ?? 0), '</strong></span>
+                    </div>
                 </div>
-                <div class="mini-stat">
-                    <span class="value">'.number_format($player['deaths'] ?? 0).'</span>
-                    <span class="label">Deaths</span>
-                </div>
-                <div class="mini-stat">
-                    <span class="value" style="color: '.(($player['kills'] ?? 0) / max(1, $player['deaths'] ?? 1) >= 1 ? 'var(--mohaa-success)' : 'var(--mohaa-danger)').'">
-                        '.number_format(($player['kills'] ?? 0) / max(1, $player['deaths'] ?? 1), 2).'
-                    </span>
-                    <span class="label">K/D</span>
-                </div>
-                <div class="mini-stat separator" style="border-left: 1px solid rgba(255,255,255,0.1); margin: 0 10px; padding-left: 10px;"></div>
-                <div class="mini-stat">
-                    <span class="value" style="color: var(--mohaa-success);">'.number_format($player['matches_won'] ?? 0).'</span>
-                    <span class="label">Wins</span>
-                </div>
-                <div class="mini-stat">
-                    <span class="value" style="color: var(--mohaa-danger);">'.number_format(($player['matches_played'] ?? 0) - ($player['matches_won'] ?? 0)).'</span>
-                    <span class="label">Losses</span>
+                
+                <div class="header-stats">
+                    <div class="mini-stat">
+                        <span class="value">'.number_format($player['kills'] ?? 0).'</span>
+                        <span class="label">Kills</span>
+                    </div>
+                    <div class="mini-stat">
+                        <span class="value">'.number_format($player['deaths'] ?? 0).'</span>
+                        <span class="label">Deaths</span>
+                    </div>
+                    <div class="mini-stat">
+                        <span class="value">
+                            '.number_format(($player['kills'] ?? 0) / max(1, $player['deaths'] ?? 1), 2).'
+                        </span>
+                        <span class="label">K/D</span>
+                    </div>
+                    <div class="mini-stat">
+                        <span class="value">'.number_format($player['matches_won'] ?? 0).'</span>
+                        <span class="label">Wins</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -232,6 +162,7 @@ function template_mohaa_war_room()
         <!-- Navigation Tabs -->
         <div class="mohaa-tabs">
             <a href="#" onclick="showTab(\'peak\'); return false;" class="mohaa-tab">⚡ Peak</a>
+            <a href="#" onclick="showTab(\'forecast\'); return false;" class="mohaa-tab">🔮 Forecast</a>
             <a href="#" onclick="showTab(\'combat\'); return false;" class="mohaa-tab active">⚔️ Combat</a>
             <a href="#" onclick="showTab(\'signature\'); return false;" class="mohaa-tab">🎯 Signature</a>
             <a href="#" onclick="showTab(\'weapons\'); return false;" class="mohaa-tab">🔫 Armoury</a>
@@ -247,6 +178,11 @@ function template_mohaa_war_room()
         <!-- ======================= PEAK PERFORMANCE TAB ======================= -->
         <div id="tab-peak" class="tab-content" style="display: none;">
             ', template_war_room_peak_performance_content($data), '
+        </div>
+
+        <!-- ======================= AI FORECAST TAB ======================= -->
+        <div id="tab-forecast" class="tab-content" style="display: none;">
+            ', template_war_room_forecast_content($data), '
         </div>
         
         <!-- ======================= SIGNATURE MOVES TAB ======================= -->
@@ -1073,18 +1009,145 @@ function template_mohaa_war_room()
 
 function template_war_room_kdr_gauge_content($player) {
     $kdr = ($player['kills'] ?? 0) / max(1, $player['deaths'] ?? 1);
-    $percent = min(100, ($kdr / 5) * 100);
-    $offset = 251.2 - (251.2 * $percent / 100);
+    $chartId = 'kdr_gauge_' . mt_rand();
     
     return '
-    <div style="position: relative; width: 220px;">
-        <svg viewBox="0 0 200 120" class="gauge-svg">
-            <path d="M20,100 A80,80 0 0,1 180,100" fill="none" class="gauge-bg" stroke="rgba(128,128,128,0.2)" stroke-width="15" stroke-linecap="round"/>
-            <path d="M20,100 A80,80 0 0,1 180,100" fill="none" stroke="var(--mohaa-accent)" stroke-width="15" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="'.$offset.'"/>
-            <text x="100" y="85" font-size="2.2em" font-weight="bold" text-anchor="middle" fill="currentColor">'.number_format($kdr, 2).'</text>
-            <text x="100" y="105" font-size="0.8em" text-anchor="middle" opacity="0.6" fill="currentColor">Ratio</text>
-        </svg>
-    </div>';
+    <div id="'.$chartId.'" style="min-height: 180px; width: 100%;"></div>
+    <script>
+    (function() {
+        var options = {
+            series: ['.min(100, ($kdr / 5) * 100).'],
+            chart: { type: "radialBar", height: 180, sparkline: { enabled: true } },
+            plotOptions: {
+                radialBar: {
+                    startAngle: -90, endAngle: 90,
+                    track: { background: "rgba(0,0,0,0.1)", strokeWidth: "90%" },
+                    dataLabels: {
+                        name: { show: false },
+                        value: {
+                            offsetY: -10, fontSize: "24px", fontWeight: "bold",
+                            formatter: function() { return "'.number_format($kdr, 2).'"; }
+                        }
+                    }
+                }
+            },
+            colors: ["#557ea0"], // Standard SMF-like blue
+            stroke: { lineCap: "butt" },
+            labels: ["K/D Ratio"]
+        };
+        new ApexCharts(document.querySelector("#'.$chartId.'"), options).render();
+    })();
+    </script>';
+}
+
+/**
+ * AI Forecast Tab Content
+ */
+function template_war_room_forecast_content($data) {
+    $predictions = $data['predictions'] ?? [];
+    if (empty($predictions) || isset($predictions['error'])) {
+        return '<div style="text-align: center; padding: 60px; opacity: 0.6;">
+            <div style="font-size: 4em; margin-bottom: 20px;">🔮</div>
+            <h3>AI Prediction Engine is analyzing your combat data...</h3>
+            <p>Play more matches to unlock performance forecasting and rival analysis.</p>
+        </div>';
+    }
+
+    $kd = round($predictions['expected_kd'] ?? 0, 2);
+    $trend = $predictions['trend'] ?? 'stable';
+    $history = $predictions['performance_history'] ?? [];
+    $rivals = $predictions['rival_analysis'] ?? [];
+    $chartId = 'forecast_trend_' . mt_rand();
+    
+    $html = '<div class="mohaa-grid">';
+    
+    // Performance Forecast Card
+    $html .= '<div class="tborder"><div class="windowbg stat-card">
+        <h3>⚡ Performance Persona</h3>
+        <div style="text-align: center; margin: 15px 0;">
+            <div style="font-size: 2.2em; font-weight: bold;">'.$kd.' <span style="font-size: 0.5em; color: #666; vertical-align: middle;">E-KD</span></div>
+            <div style="margin-top: 5px; font-weight: bold; color: #555;">
+               Trend: '.strtoupper($trend).'
+            </div>
+        </div>
+        <div id="'.$chartId.'" style="min-height: 140px; margin: 10px 0;"></div>
+        <div style="background: #fdfdfd; border: 1px solid #ccc; padding: 10px; border-radius: 4px; margin-top: auto;">
+            <div style="font-size: 0.75em; text-transform: uppercase; color: #557ea0; font-weight: bold; margin-bottom: 5px;">Tactical Recommendations</div>';
+            foreach (($predictions['recommendations'] ?? []) as $rec) {
+                $html .= '<div style="font-size: 0.85em; margin-bottom: 3px;">• '.$rec['description'].'</div>';
+            }
+    $html .= '</div>
+    </div></div>';
+
+    // Matches/Confidence Card
+    $html .= '<div class="tborder"><div class="windowbg stat-card">
+        <h3>🛡️ Tactical Outlook</h3>
+        <div style="display: flex; justify-content: space-between; margin: 15px 0; text-align: center;">
+            <div style="flex: 1;">
+                <div style="font-size: 0.7em; color: #666; text-transform: uppercase;">Predicted Kills</div>
+                <div style="font-size: 1.8em; font-weight: bold; color: #2ea44f;">'.round($predictions['predicted_kills'] ?? 0).'</div>
+            </div>
+            <div style="width: 1px; background: #ccc;"></div>
+            <div style="flex: 1;">
+                <div style="font-size: 0.7em; color: #666; text-transform: uppercase;">Predicted Deaths</div>
+                <div style="font-size: 1.8em; font-weight: bold; color: #cf222e;">'.round($predictions['predicted_deaths'] ?? 0).'</div>
+            </div>
+        </div>
+        
+        <div style="margin: 15px 0;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.8em; margin-bottom: 3px;">
+                <span style="opacity: 0.8;">AI Confidence Rating</span>
+                <strong>'.round($predictions['confidence'] ?? 0).'%</strong>
+            </div>
+            <div style="height: 6px; background: #eee; border: 1px solid #ccc; border-radius: 3px; overflow: hidden;">
+                <div style="width: '.round($predictions['confidence'] ?? 0).'%; height: 100%; background: #557ea0;"></div>
+            </div>
+        </div>
+
+        <div style="padding: 10px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; font-style: italic; font-size: 0.9em; color: #444; margin-top: auto;">
+            "'.$predictions['outlook'].'"
+        </div>
+    </div></div>';
+
+    // Rivalry Card
+    $html .= '<div class="tborder"><div class="windowbg stat-card">
+        <h3>🚨 Rivalry Heatmap</h3>
+        <div style="flex: 1; overflow-y: auto; max-height: 250px;">';
+        if (empty($rivals)) {
+            $html .= '<p style="text-align: center; opacity: 0.5; padding: 30px; font-size: 0.9em;">No combat data.</p>';
+        } else {
+            foreach ($rivals as $rival) {
+                $prob = round(($rival['win_prob'] ?? 0) * 100);
+                $html .= '<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee;">
+                    <div>
+                        <div style="font-weight: bold; font-size: 0.95em;">'.$rival['opponent_name'].($rival['nemesis'] ? ' <span style="color: #cf222e; font-size: 0.8em;">[NEMESIS]</span>' : '').'</div>
+                        <div style="font-size: 0.7em; color: #666;">Win probability</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 1.1em; font-weight: bold; color: '.($prob > 50 ? '#2ea44f' : '#cf222e').';">'.$prob.'%</div>
+                    </div>
+                </div>';
+            }
+        }
+    $html .= '</div>
+    </div></div>';
+
+    $html .= '</div>';
+    
+    // Trend Chart Script
+    $html .= '<script>
+    (function() {
+        var options = {
+            series: [{ name: "K/D Trend", data: '.json_encode($history).' }],
+            chart: { type: "line", height: 140, sparkline: { enabled: true } },
+            stroke: { curve: "straight", width: 2, colors: ["#557ea0"] },
+            markers: { size: 4, colors: ["#557ea0"] }
+        };
+        new ApexCharts(document.querySelector("#'.$chartId.'"), options).render();
+    })();
+    </script>';
+    
+    return $html;
 }
 
 function template_war_room_silhouette_content($player) {
@@ -1194,49 +1257,65 @@ function template_war_room_streaks_content($player) {
 function template_war_room_accuracy_content($player, $data) {
     $accuracy = $player['accuracy'] ?? 0;
     $serverAvg = $data['server_avg_accuracy'] ?? 0;
+    $chartId = 'accuracy_gauge_' . mt_rand();
     
     return '
-    <div style="text-align: center; padding: 15px;">
-        <div style="font-size: 2.5em; font-weight: bold; color: var(--mohaa-success);">'.number_format($accuracy, 1).'%</div>
-        <div style="font-size: 0.9em; opacity: 0.7; margin-bottom: 15px;">Target Hit Rate</div>
-        
-        <div style="background: rgba(0,0,0,0.1); border-radius: 4px; padding: 10px; font-size: 0.9em;">
-            Server Avg: <strong>'.number_format($serverAvg, 1).'%</strong>
-        </div>
+    <div id="'.$chartId.'" style="min-height: 180px; width: 100%;"></div>
+    <script>
+    (function() {
+        var options = {
+            series: ['.round($accuracy).'],
+            chart: { type: "radialBar", height: 180, sparkline: { enabled: true } },
+            plotOptions: {
+                radialBar: {
+                    hollow: { size: "60%" },
+                    track: { background: "rgba(0,0,0,0.05)" },
+                    dataLabels: {
+                        name: { show: false },
+                        value: {
+                            offsetY: 8, fontSize: "20px", fontWeight: "bold",
+                            formatter: function(val) { return val + "%"; }
+                        }
+                    }
+                }
+            },
+            colors: ["#2ea44f"], // Standard green
+            stroke: { lineCap: "butt" },
+            labels: ["Accuracy"]
+        };
+        new ApexCharts(document.querySelector("#'.$chartId.'"), options).render();
+    })();
+    </script>
+    <div style="text-align: center; margin-top: -10px; font-size: 0.85em; opacity: 0.6;">
+        Server Avg: '.number_format($serverAvg, 1).'%
     </div>';
 }
 
 function template_war_room_damage_content($player) {
     $dealt = $player['damage_dealt'] ?? 0;
     $taken = $player['damage_taken'] ?? 0;
-    $max = max($dealt, $taken, 1);
-    
-    $dealtPct = ($dealt / $max) * 100;
-    $takenPct = ($taken / $max) * 100;
+    $chartId = 'damage_chart_' . mt_rand();
     
     return '
-    <div style="padding: 15px;">
-        <div style="margin-bottom: 20px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                <span style="font-weight: bold; color: var(--mohaa-success);">Damage Dealt</span>
-                <span>'.number_format($dealt).'</span>
-            </div>
-            <div style="background: rgba(0,0,0,0.1); height: 10px; border-radius: 5px; overflow: hidden;">
-                <div style="background: var(--mohaa-success); height: 100%; width: '.$dealtPct.'%;"></div>
-            </div>
-        </div>
-        <div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                <span style="font-weight: bold; color: var(--mohaa-danger);">Damage Taken</span>
-                <span>'.number_format($taken).'</span>
-            </div>
-            <div style="background: rgba(0,0,0,0.1); height: 10px; border-radius: 5px; overflow: hidden;">
-                <div style="background: var(--mohaa-danger); height: 100%; width: '.$takenPct.'%;"></div>
-            </div>
-        </div>
-        <div style="margin-top: 15px; font-size: 0.85em; text-align: center; opacity: 0.7;">
-            Net: <span style="font-weight: bold; color: '.($dealt >= $taken ? 'var(--mohaa-success)' : 'var(--mohaa-danger)').'">'.($dealt - $taken > 0 ? '+' : '').number_format($dealt - $taken).'</span>
-        </div>
+    <div id="'.$chartId.'" style="min-height: 180px; width: 100%;"></div>
+    <script>
+    (function() {
+        var options = {
+            series: [{ name: "Damage", data: ['.$dealt.', '.$taken.'] }],
+            chart: { type: "bar", height: 160, toolbar: { show: false }, background: "transparent" },
+            plotOptions: { bar: { distributed: true, borderRadius: 2, horizontal: true, barHeight: "50%" } },
+            colors: ["#2ea44f", "#cf222e"], // Standard green/red
+            dataLabels: { enabled: true, style: { fontWeight: "bold" }, formatter: function(val) { return val.toLocaleString(); } },
+            xaxis: { categories: ["Dealt", "Taken"], labels: { show: false }, axisBorder: { show: false }, axisTicks: { show: false } },
+            yaxis: { labels: { style: { colors: "#444", fontWeight: "bold" } } },
+            grid: { show: false },
+            legend: { show: false }
+        };
+        new ApexCharts(document.querySelector("#'.$chartId.'"), options).render();
+    })();
+    </script>
+    <div style="text-align: center; font-size: 0.85em; margin-top: 5px;">
+        Net Ratio: <strong style="color: '.($dealt >= $taken ? 'var(--mohaa-success)' : 'var(--mohaa-danger)').';">'.number_format($dealt/max(1,$taken), 1).'</strong>
     </div>';
 }
 

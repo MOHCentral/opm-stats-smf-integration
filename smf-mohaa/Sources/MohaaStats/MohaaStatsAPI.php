@@ -503,6 +503,10 @@ class MohaaStatsAPIClient
     public function getPendingIPApprovals(int $memberId): ?array { return $this->get('/auth/pending-approvals/' . $memberId); }
     public function deleteTrustedIP(int $memberId, int $ipId): ?array { return $this->post('/auth/trusted-ips/' . $memberId . '/delete', ['ip_id' => $ipId]); }
     public function resolvePendingIP(int $memberId, int $approvalId, string $action): ?array { return $this->post('/auth/pending-approvals/' . $memberId . '/resolve', ['approval_id' => $approvalId, 'action' => $action]); }
+
+    // AI Prediction Endpoints
+    public function getPlayerPredictions(string $guid): ?array { return $this->get('/stats/player/' . urlencode($guid) . '/predictions'); }
+    public function getMatchPredictions(string $matchId): ?array { return $this->get('/stats/match/' . urlencode($matchId) . '/predictions'); }
 }
 
 function MohaaStats_APIProxy(): void

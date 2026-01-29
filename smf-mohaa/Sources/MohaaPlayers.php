@@ -445,6 +445,7 @@ function MohaaPlayers_Dashboard(): void
 
             'gametypes' => ['endpoint' => '/stats/player/' . urlencode($myGuid) . '/gametypes'],
             'maps' => ['endpoint' => '/stats/player/' . urlencode($myGuid) . '/maps'],
+            'predictions' => ['endpoint' => '/player/' . urlencode($myGuid) . '/predictions'],
         ];
         
         $playerResults = $api->getMultiple($playerRequests);
@@ -532,6 +533,7 @@ function MohaaPlayers_Dashboard(): void
             'world_stats' => $playerResults['world'] ?? [],
             'bot_stats' => $playerResults['bots'] ?? [],
             'gametype_stats' => $playerResults['gametypes'] ?? [],
+            'predictions' => $playerResults['predictions'] ?? [],
         ];
     } else {
         $context['mohaa_has_identity'] = false;
