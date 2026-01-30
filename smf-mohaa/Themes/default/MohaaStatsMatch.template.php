@@ -15,49 +15,86 @@ function template_mohaa_stats_match()
 
     $match = $context['mohaa_match'];
     
+    // Load Dependencies
     echo '
-    <div class="cat_bar">
-        <h3 class="catbg">', $txt['mohaa_match_detail'], ': ', $match['map_name'], '</h3>
-    </div>';
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.0.0/styles/ag-grid.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.0.0/styles/ag-theme-alpine.css">
+    <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@31.0.0/dist/ag-grid-community.min.js"></script>
+    
+    <style>
+        .mohaa-match-header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .mohaa-match-header .stat-label { color: rgba(255,255,255,0.7); font-size: 0.85em; text-transform: uppercase; letter-spacing: 1px; }
+        .mohaa-match-header .stat-value { font-size: 1.4em; font-weight: 700; margin-top: 5px; }
+        
+        .mohaa-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #dfe6e9; padding-bottom: 10px; }
+        .tab-button { 
+            padding: 10px 20px; 
+            border: none; 
+            background: transparent; 
+            color: #7f8c8d; 
+            cursor: pointer; 
+            font-weight: 600; 
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .tab-button:hover { background: #f8f9fa; color: #2c3e50; }
+        .tab-button.active { background: #3498db; color: white; box-shadow: 0 4px 6px rgba(52,152,219,0.3); }
+        
+        .ag-theme-alpine { 
+            --ag-header-background-color: #f8f9fa;
+            --ag-header-foreground-color: #2c3e50;
+            --ag-row-hover-color: rgba(52, 152, 219, 0.05);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+    </style>';
 
-    // Match Header
     echo '
-    <div class="windowbg mohaa-match-header">
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; text-align: center;">
+    <div class="mohaa-match-header">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 20px; text-align: center;">
             <div>
-                <div style="font-size: 0.8em; color: #666;">', $txt['mohaa_map'], '</div>
-                <div style="font-size: 1.2em; font-weight: bold;">', $match['map_name'], '</div>
+                <div class="stat-label">🗺️ ', $txt['mohaa_map'], '</div>
+                <div class="stat-value">', htmlspecialchars($match['map_name']), '</div>
             </div>
             <div>
-                <div style="font-size: 0.8em; color: #666;">', $txt['mohaa_mode'], '</div>
-                <div style="font-size: 1.2em; font-weight: bold;">', ucfirst($match['game_mode']), '</div>
+                <div class="stat-label">🎮 ', $txt['mohaa_mode'], '</div>
+                <div class="stat-value">', ucfirst($match['game_mode']), '</div>
             </div>
             <div>
-                <div style="font-size: 0.8em; color: #666;">', $txt['mohaa_duration'], '</div>
-                <div style="font-size: 1.2em; font-weight: bold;">', format_duration($match['duration']), '</div>
+                <div class="stat-label">⏱️ ', $txt['mohaa_duration'], '</div>
+                <div class="stat-value">', format_duration($match['duration']), '</div>
             </div>
             <div>
-                <div style="font-size: 0.8em; color: #666;">', $txt['mohaa_players'], '</div>
-                <div style="font-size: 1.2em; font-weight: bold;">', count($match['players'] ?? []), '</div>
+                <div class="stat-label">👥 ', $txt['mohaa_players'], '</div>
+                <div class="stat-value">', count($match['players'] ?? []), '</div>
             </div>
             <div>
-                <div style="font-size: 0.8em; color: #666;">', $txt['mohaa_date'], '</div>
-                <div style="font-size: 1.2em;">', timeformat($match['ended_at']), '</div>
+                <div class="stat-label">📅 ', $txt['mohaa_date'], '</div>
+                <div class="stat-value" style="font-size: 1.1em;">', timeformat($match['ended_at']), '</div>
             </div>
         </div>';
 
     // Team scores for team matches
     if (!empty($match['team_match'])) {
         echo '
-        <div class="mohaa-team-scores" style="display: flex; justify-content: center; gap: 30px; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(0,0,0,0.1);">
+        <div class="mohaa-team-scores" style="display: flex; justify-content: center; align-items: center; gap: 40px; margin-top: 25px; padding-top: 25px; border-top: 1px solid rgba(255,255,255,0.1);">
             <div class="team-allies" style="text-align: center;">
-                <div style="color: #3b82f6; font-size: 2em; font-weight: bold;">', $match['allies_score'], '</div>
-                <div>Allies</div>
+                <div style="color: #60a5fa; font-size: 3em; font-weight: 800; line-height: 1;">', $match['allies_score'], '</div>
+                <div style="text-transform: uppercase; letter-spacing: 2px; font-weight: bold; margin-top: 5px;">Allies</div>
             </div>
-            <div style="font-size: 2em; color: #ccc;">vs</div>
+            <div style="font-size: 2em; color: rgba(255,255,255,0.3); font-style: italic; font-weight: 300;">vs</div>
             <div class="team-axis" style="text-align: center;">
-                <div style="color: #ef4444; font-size: 2em; font-weight: bold;">', $match['axis_score'], '</div>
-                <div>Axis</div>
+                <div style="color: #f87171; font-size: 3em; font-weight: 800; line-height: 1;">', $match['axis_score'], '</div>
+                <div style="text-transform: uppercase; letter-spacing: 2px; font-weight: bold; margin-top: 5px;">Axis</div>
             </div>
         </div>';
     }
@@ -68,63 +105,30 @@ function template_mohaa_stats_match()
     // Tabs
     echo '
     <div class="mohaa-tabs">
-        <button class="tab-button active" data-tab="scoreboard">', $txt['mohaa_scoreboard'], '</button>
-        <button class="tab-button" data-tab="versus">⚔️ Versus</button>
-        <button class="tab-button" data-tab="heatmap">', $txt['mohaa_heatmap'], '</button>
-        <button class="tab-button" data-tab="timeline">', $txt['mohaa_timeline'], '</button>
-        <button class="tab-button" data-tab="weapons">', $txt['mohaa_weapons'], '</button>
+        <button class="tab-button active" data-tab="scoreboard">📊 Scoreboard</button>
+        <button class="tab-button" data-tab="versus">⚔️ Versus Matrix</button>
+        <button class="tab-button" data-tab="timeline">📜 Match Timeline</button>
+        <button class="tab-button" data-tab="weapons">🔫 Weapons</button>
+        <button class="tab-button" data-tab="heatmap">🗺️ Heatmap</button>
     </div>';
 
     // Scoreboard Tab
     echo '
-    <div id="tab-scoreboard" class="mohaa-tab-content" style="display: block;">';
-    
-    template_match_scoreboard($match);
-    
-    echo '
+    <div id="tab-scoreboard" class="mohaa-tab-content" style="display: block;">
+        <div id="grid-scoreboard" class="ag-theme-alpine" style="height: 500px; width: 100%;"></div>
     </div>';
 
     // Versus Tab
     echo '
-    <div id="tab-versus" class="mohaa-tab-content windowbg" style="display: none;">
-        <h4>Versus Matrix (Who killed Who)</h4>
-        <div id="chart-versus" style="min-height: 500px;"></div>
-    </div>';
-
-    // Heatmap Tab
-    echo '
-    <div id="tab-heatmap" class="mohaa-tab-content windowbg" style="display: none;">
-        <h4>', $txt['mohaa_heatmap'], '</h4>
-        <div class="mohaa-heatmap-controls" style="margin-bottom: 15px;">
-            <label>
-                <input type="radio" name="heatmap_type" value="kills" checked onchange="updateHeatmap(this.value)">
-                ', $txt['mohaa_kills'], '
-            </label>
-            <label style="margin-left: 15px;">
-                <input type="radio" name="heatmap_type" value="deaths" onchange="updateHeatmap(this.value)">
-                ', $txt['mohaa_deaths'], '
-            </label>
-        </div>
-        <div id="match-heatmap" class="mohaa-heatmap-container"></div>
-        
-        <script>
-            var heatmapData = ', json_encode($match['heatmap_data'] ?? []), ';
-            var mapImage = "Themes/default/images/mohaastats/maps/', $match['map_name'], '.jpg";
-            
-            document.addEventListener("DOMContentLoaded", function() {
-                updateHeatmap("kills");
-            });
-            
-            function updateHeatmap(type) {
-                MohaaStats.initHeatmap("match-heatmap", mapImage, heatmapData[type] || [], type);
-            }
-        </script>
+    <div id="tab-versus" class="mohaa-tab-content windowbg" style="display: none; padding: 20px;">
+        <h4 style="margin-top:0;">Versus Matrix (Who killed Who)</h4>
+        <div id="chart-versus" style="min-height: 500px; background: #fff; border-radius: 8px; border: 1px solid #dfe6e9;"></div>
     </div>';
 
     // Timeline Tab
     echo '
-    <div id="tab-timeline" class="mohaa-tab-content windowbg" style="display: none;">
-        <h4>', $txt['mohaa_timeline'], '</h4>';
+    <div id="tab-timeline" class="mohaa-tab-content windowbg" style="display: none; padding: 20px;">
+        <h4 style="margin-top:0;">', $txt['mohaa_timeline'], '</h4>';
     
     template_match_timeline($match['timeline'] ?? []);
     
@@ -133,21 +137,61 @@ function template_mohaa_stats_match()
 
     // Weapons Tab
     echo '
-    <div id="tab-weapons" class="mohaa-tab-content windowbg" style="display: none;">
-        <h4>', $txt['mohaa_weapon_breakdown'], '</h4>';
-    
-    template_match_weapons($match['top_weapons'] ?? []);
-    
-    echo '
+    <div id="tab-weapons" class="mohaa-tab-content windowbg" style="display: none; padding: 20px;">
+        <h4 style="margin-top:0;">', $txt['mohaa_weapon_breakdown'], '</h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div id="grid-weapons" class="ag-theme-alpine" style="height: 400px;"></div>
+            <div id="matchWeaponChart" style="height: 400px; background: #fff; border-radius: 8px; border: 1px solid #dfe6e9;"></div>
+        </div>
     </div>';
 
-    // Inject Scripts for Versus
+    // Heatmap Tab
+    echo '
+    <div id="tab-heatmap" class="mohaa-tab-content windowbg" style="display: none; padding: 20px;">
+        <h4 style="margin-top:0;">', $txt['mohaa_heatmap'], '</h4>
+        <div class="mohaa-heatmap-controls" style="margin-bottom: 20px; display: flex; gap: 20px;">
+            <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                <input type="radio" name="heatmap_type" value="kills" checked onchange="updateHeatmap(this.value)">
+                <span style="font-weight: 600;">🔫 ', $txt['mohaa_kills'], '</span>
+            </label>
+            <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                <input type="radio" name="heatmap_type" value="deaths" onchange="updateHeatmap(this.value)">
+                <span style="font-weight: 600;">💀 ', $txt['mohaa_deaths'], '</span>
+            </label>
+        </div>
+        <div id="match-heatmap" class="mohaa-heatmap-container" style="border-radius: 12px; overflow: hidden; border: 1px solid #dfe6e9;"></div>
+    </div>';
+
+    // Heatmap data init script
+    echo '
+    <script>
+        var heatmapData = ', json_encode($match['heatmap_data'] ?? []), ';
+        var mapImage = "Themes/default/images/mohaastats/maps/', $match['map_name'], '.jpg";
+        
+        function updateHeatmap(type) {
+            if (window.MohaaStats && MohaaStats.initHeatmap) {
+                MohaaStats.initHeatmap("match-heatmap", mapImage, heatmapData[type] || [], type);
+            }
+        }
+        
+        document.addEventListener("DOMContentLoaded", function() {
+            setTimeout(() => updateHeatmap("kills"), 100);
+        });
+    </script>';
+
+    // Inject Scripts for Grids and Charts
+    $players = array_values($match['players'] ?? []);
+    foreach($players as &$p) {
+        $p['kd'] = $p['deaths'] > 0 ? round($p['kills'] / $p['deaths'], 2) : $p['kills'];
+    }
+    
+    $weapons = array_slice(array_values($match['top_weapons'] ?? []), 0, 10);
+
     $versusData = [];
     if (!empty($match['versus'])) {
         foreach ($match['versus'] as $killer => $victims) {
             $dataPoints = [];
             foreach ($victims as $v) {
-                // Ensure unique x,y pair?
                  $dataPoints[] = ['x' => $v['opponent_name'], 'y' => $v['kills']];
             }
             $versusData[] = ['name' => $killer, 'data' => $dataPoints];
@@ -157,161 +201,87 @@ function template_mohaa_stats_match()
     echo '
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            // Helper for tabs
+            // Tab handling
             document.querySelectorAll(".tab-button").forEach(b => {
                 b.addEventListener("click", e => {
                     document.querySelectorAll(".mohaa-tab-content").forEach(c => c.style.display = "none");
                     document.querySelectorAll(".tab-button").forEach(btn => btn.classList.remove("active"));
-                    document.getElementById("tab-" + e.target.getAttribute("data-tab")).style.display = "block";
-                    e.target.classList.add("active");
-                    
-                    // Trigger map resize if needed
+                    document.getElementById("tab-" + e.currentTarget.getAttribute("data-tab")).style.display = "block";
+                    e.currentTarget.classList.add("active");
                     window.dispatchEvent(new Event("resize"));
                 });
             });
 
+            // Scoreboard Grid
+            const scoreboardData = ', json_encode($players), ';
+            const scoreboardOptions = {
+                rowData: scoreboardData,
+                columnDefs: [
+                    { field: "player_name", headerName: "Player", flex: 2, pinned: "left", cellRenderer: params => {
+                        const val = params.value || "Unknown";
+                        return `<a href="', $scripturl, '?action=mohaastats;sa=player;guid=${params.data.player_id}" style="font-weight:600; color:#3498db;">${val}</a>`;
+                    }},
+                    { field: "team", headerName: "Team", width: 100, cellRenderer: params => {
+                        const style = params.value === "allies" ? "color:#3b82f6" : (params.value === "axis" ? "color:#ef4444" : "");
+                        return `<span style="${style}; font-weight:bold; text-transform:uppercase;">${params.value || "-"}</span>`;
+                    }},
+                    { field: "score", headerName: "Score", width: 100, sort: "desc", valueFormatter: p => p.value.toLocaleString() },
+                    { field: "kills", headerName: "Kills", width: 80, valueFormatter: p => p.value.toLocaleString() },
+                    { field: "deaths", headerName: "Deaths", width: 80 },
+                    { field: "kd", headerName: "K/D", width: 80, cellStyle: p => ({ color: p.value >= 1 ? "#10b981" : "#ef4444", fontWeight: "bold" }) },
+                    { field: "headshots", headerName: "HS", width: 80 }
+                ],
+                defaultColDef: { sortable: true, filter: true, resizable: true },
+                pagination: true,
+                paginationPageSize: 20
+            };
+            new agGrid.Grid(document.querySelector("#grid-scoreboard"), scoreboardOptions);
+
+            // Weapons Grid
+            const weaponsData = ', json_encode($weapons), ';
+            const weaponsOptions = {
+                rowData: weaponsData,
+                columnDefs: [
+                    { field: "name", headerName: "Weapon", flex: 1, pinned: "left" },
+                    { field: "kills", headerName: "Kills", width: 100, sort: "desc" },
+                    { field: "headshots", headerName: "HS", width: 100 },
+                    { headerName: "HS %", width: 100, valueGetter: p => p.data.kills > 0 ? Math.round((p.data.headshots / p.data.kills) * 100) + "%" : "0%" }
+                ],
+                defaultColDef: { sortable: true, resizable: true },
+                domLayout: "autoHeight"
+            };
+            new agGrid.Grid(document.querySelector("#grid-weapons"), weaponsOptions);
+
+            // Weapons Chart
+            if (weaponsData.length > 0) {
+                const chartOptions = {
+                    series: [{ name: "Kills", data: weaponsData.map(w => w.kills) }],
+                    chart: { type: "bar", height: 350, toolbar: {show:false} },
+                    colors: ["#3498db"],
+                    plotOptions: { bar: { borderRadius: 4, horizontal: true } },
+                    dataLabels: { enabled: false },
+                    xaxis: { categories: weaponsData.map(w => w.name) },
+                    title: { text: "Top Weapons", align: "center", style: { color: "#2c3e50" } }
+                };
+                new ApexCharts(document.querySelector("#matchWeaponChart"), chartOptions).render();
+            }
+
             // Versus Heatmap
             const versusData = ', json_encode($versusData), ';
             if(versusData.length > 0) {
-                 const options = {
+                 const vOptions = {
                     series: versusData,
-                    chart: { type: "heatmap", height: 600, toolbar: {show:false}, background: "transparent" },
-                    dataLabels: { enabled: true, style: { colors: ["#000"] } }, // Show numbers
-                    colors: ["#008FFB"],
-                    title: { text: "Killer (Y) vs Victim (X)", style: { color: "#fff" } },
-                    theme: { mode: "dark" },
-                    xaxis: { labels: { style: { colors: "#fff" } } },
-                    yaxis: { labels: { style: { colors: "#fff" } } },
-                    tooltip: { theme: "dark" },
-                    plotOptions: { heatmap: { shadeIntensity: 0.5, colorScale: { ranges: [{from:0, to:0, color:"transparent"}] } } }
+                    chart: { type: "heatmap", height: 500, toolbar: {show:false} },
+                    dataLabels: { enabled: true, style: { colors: ["#2c3e50"] } },
+                    colors: ["#3498db"],
+                    xaxis: { type: "category" },
+                    title: { text: "Killer (Y) vs Victim (X)", align: "center" },
+                    plotOptions: { heatmap: { shadeIntensity: 0.5, colorScale: { ranges: [{from:0, to:0, color:"#f8f9fa"}] } } }
                 };
-                new ApexCharts(document.querySelector("#chart-versus"), options).render();
-            } else {
-                 document.querySelector("#chart-versus").innerHTML = "<p class=\'centertext\'>No versus data available.</p>";
+                new ApexCharts(document.querySelector("#chart-versus"), vOptions).render();
             }
-
-            // Existing Map Heatmap
-            // ...
         });
     </script>';
-}
-
-/**
- * Match scoreboard template
- */
-function template_match_scoreboard($match)
-{
-    global $scripturl, $txt;
-
-    $players = $match['players'] ?? [];
-    
-    // Sort by score descending
-    usort($players, function($a, $b) {
-        return $b['score'] - $a['score'];
-    });
-
-    if (!empty($match['team_match'])) {
-        // Team-based scoreboard
-        $allies = array_filter($players, fn($p) => ($p['team'] ?? '') === 'allies');
-        $axis = array_filter($players, fn($p) => ($p['team'] ?? '') === 'axis');
-
-        echo '
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-            <div>
-                <div class="title_bar"><h4 class="titlebg" style="color: #3b82f6;">Allies</h4></div>';
-        
-        template_team_table($allies, $scripturl, $txt);
-        
-        echo '
-            </div>
-            <div>
-                <div class="title_bar"><h4 class="titlebg" style="color: #ef4444;">Axis</h4></div>';
-        
-        template_team_table($axis, $scripturl, $txt);
-        
-        echo '
-            </div>
-        </div>';
-    } else {
-        // FFA scoreboard
-        echo '
-        <div class="windowbg">
-            <table class="table_grid" style="width: 100%;">
-                <thead>
-                    <tr class="title_bar">
-                        <th>#</th>
-                        <th>', $txt['mohaa_player'], '</th>
-                        <th>', $txt['mohaa_score'], '</th>
-                        <th>', $txt['mohaa_kills'], '</th>
-                        <th>', $txt['mohaa_deaths'], '</th>
-                        <th>', $txt['mohaa_kd'], '</th>
-                        <th>', $txt['mohaa_headshots'], '</th>
-                    </tr>
-                </thead>
-                <tbody>';
-
-        $rank = 1;
-        foreach ($players as $player) {
-            $kd = $player['deaths'] > 0 ? round($player['kills'] / $player['deaths'], 2) : $player['kills'];
-            $kdClass = $kd >= 1 ? 'style="color: #4ade80;"' : 'style="color: #f87171;"';
-            
-            echo '
-                    <tr class="windowbg">
-                        <td><strong>', $rank++, '</strong></td>
-                        <td>
-                            <a href="', $scripturl, '?action=mohaastats;sa=player;id=', $player['player_id'], '">
-                                ', $player['name'], '
-                            </a>
-                        </td>
-                        <td>', number_format($player['score']), '</td>
-                        <td>', number_format($player['kills']), '</td>
-                        <td>', number_format($player['deaths']), '</td>
-                        <td ', $kdClass, '>', $kd, '</td>
-                        <td>', number_format($player['headshots'] ?? 0), '</td>
-                    </tr>';
-        }
-
-        echo '
-                </tbody>
-            </table>
-        </div>';
-    }
-}
-
-/**
- * Team table helper
- */
-function template_team_table($players, $scripturl, $txt)
-{
-    echo '
-    <table class="table_grid" style="width: 100%;">
-        <thead>
-            <tr class="title_bar">
-                <th>', $txt['mohaa_player'], '</th>
-                <th>', $txt['mohaa_score'], '</th>
-                <th>', $txt['mohaa_kills'], '</th>
-                <th>', $txt['mohaa_deaths'], '</th>
-            </tr>
-        </thead>
-        <tbody>';
-
-    foreach ($players as $player) {
-        echo '
-            <tr class="windowbg">
-                <td>
-                    <a href="', $scripturl, '?action=mohaastats;sa=player;id=', $player['player_id'], '">
-                        ', $player['name'], '
-                    </a>
-                </td>
-                <td>', number_format($player['score']), '</td>
-                <td>', number_format($player['kills']), '</td>
-                <td>', number_format($player['deaths']), '</td>
-            </tr>';
-    }
-
-    echo '
-        </tbody>
-    </table>';
 }
 
 /**
@@ -371,61 +341,6 @@ function template_match_timeline($events)
         .event-time { color: #666; font-family: monospace; min-width: 50px; }
         .event-icon { font-size: 1.2em; }
     </style>';
-}
-
-/**
- * Match weapon stats template
- */
-function template_match_weapons($weapon_stats)
-{
-    global $txt;
-
-    if (empty($weapon_stats)) {
-        echo '<p class="centertext">', $txt['mohaa_no_data'], '</p>';
-        return;
-    }
-
-    // Sort by kills
-    usort($weapon_stats, fn($a, $b) => $b['kills'] - $a['kills']);
-
-    echo '
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-        <div style="height: 300px;">
-            <canvas id="matchWeaponChart"></canvas>
-        </div>
-        <div>
-            <table class="table_grid">
-                <thead>
-                    <tr class="title_bar">
-                        <th>', $txt['mohaa_weapon'], '</th>
-                        <th>', $txt['mohaa_kills'], '</th>
-                        <th>', $txt['mohaa_headshots'], '</th>
-                    </tr>
-                </thead>
-                <tbody>';
-
-    foreach ($weapon_stats as $weapon) {
-        $hsPercent = $weapon['kills'] > 0 ? round(($weapon['headshots'] / $weapon['kills']) * 100) : 0;
-        
-        echo '
-                    <tr class="windowbg">
-                        <td><strong>', $weapon['name'], '</strong></td>
-                        <td>', number_format($weapon['kills']), '</td>
-                        <td>', number_format($weapon['headshots']), ' (', $hsPercent, '%)</td>
-                    </tr>';
-    }
-
-    echo '
-                </tbody>
-            </table>
-        </div>
-    </div>
-    
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            MohaaStats.initWeaponChart("matchWeaponChart", ', json_encode(array_slice($weapon_stats, 0, 5)), ');
-        });
-    </script>';
 }
 
 /**

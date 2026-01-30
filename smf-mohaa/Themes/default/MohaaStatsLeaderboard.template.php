@@ -191,8 +191,8 @@ function template_mohaa_leaderboards_dashboard()
                         <li>
                             <span class="rank', $rankClass, '">', $rankEmoji, '</span>
                             <span class="name">
-                                <a href="', $scripturl, '?action=mohaastats;sa=player;guid=', urlencode($player['guid'] ?? ''), '">', 
-                                    htmlspecialchars($player['name'] ?? 'Unknown'), '
+                                <a href="', $scripturl, '?action=mohaastats;sa=player;guid=', urlencode($player['player_id'] ?? ''), '">', 
+                                    htmlspecialchars($player['player_name'] ?? 'Unknown'), '
                                 </a>
                             </span>
                             <span class="value">', $value, '</span>
@@ -1339,8 +1339,8 @@ function template_mohaa_stats_map_leaderboard()
                         <tr>
                             <td><strong>', $rank + 1, '</strong></td>
                             <td style="text-align: left;">
-                                <a href="', $scripturl, '?action=mohaastats;sa=player;id=', urlencode($player['id'] ?? ''), '" class="player-link">
-                                    ', htmlspecialchars($player['name'] ?? 'Unknown'), '
+                                <a href="', $scripturl, '?action=mohaastats;sa=player;id=', urlencode($player['player_id'] ?? $player['id'] ?? ''), '" class="player-link">
+                                    ', htmlspecialchars($player['player_name'] ?? $player['name'] ?? 'Unknown'), '
                                 </a>
                             </td>
                             <td>', number_format($kills), '</td>
@@ -1610,7 +1610,7 @@ function template_mohaa_stats_dashboard()
                 <li class="top-entry rank-', $rank, '">
                     <span class="rank">#', $rank, '</span>
                     <span class="name">
-                        <a href="', $scripturl, '?action=mohaastats;sa=player;id=', $player['id'], '">', htmlspecialchars($player['name']), '</a>
+                        <a href="', $scripturl, '?action=mohaastats;sa=player;id=', ($player['player_id'] ?? $player['id'] ?? ''), '">', htmlspecialchars($player['player_name'] ?? $player['name'] ?? 'Unknown'), '</a>
                     </span>
                     <span class="value">', $player['value'], '</span>
                 </li>';
@@ -1889,8 +1889,8 @@ function template_mohaa_stats_gametypes()
                         <tr>
                             <td><strong>', $rank + 1, '</strong></td>
                             <td>
-                                <a href="', $scripturl, '?action=mohaastats;sa=player;id=', urlencode($player['id'] ?? ''), '">
-                                    ', htmlspecialchars($player['name'] ?? 'Unknown'), '
+                                <a href="', $scripturl, '?action=mohaastats;sa=player;id=', urlencode($player['player_id'] ?? $player['id'] ?? ''), '">
+                                    ', htmlspecialchars($player['player_name'] ?? $player['name'] ?? 'Unknown'), '
                                 </a>
                             </td>
                             <td>', number_format($kills), '</td>

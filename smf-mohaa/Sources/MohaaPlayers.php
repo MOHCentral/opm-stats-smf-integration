@@ -19,8 +19,10 @@ function MohaaPlayers_Actions(array &$actions): void
 {
     $actions['mohaaplayer'] = ['MohaaPlayers.php', 'MohaaPlayers_ViewPlayer'];
     $actions['mohaaplayers'] = ['MohaaPlayers.php', 'MohaaPlayers_Main']; // Main entry with sub-actions
-    $actions['mohaastats'] = ['MohaaPlayers.php', 'MohaaStats_Router']; // Stats pages with sub-actions
-    $actions['mohaadashboard'] = ['MohaaPlayers.php', 'MohaaPlayers_Dashboard'];
+    // Note: mohaastats is registered by MohaaStats.php which has the full implementation
+    // $actions['mohaastats'] = ['MohaaPlayers.php', 'MohaaStats_Router']; // Removed - conflicts with MohaaStats.php
+    // Note: mohaadashboard is registered by MohaaStats.php
+    // $actions['mohaadashboard'] = ['MohaaPlayers.php', 'MohaaPlayers_Dashboard']; // Removed - use MohaaStats.php version
     $actions['mohaawarroom'] = ['MohaaPlayers.php', 'MohaaPlayers_Dashboard']; // Alias for war room
     $actions['mohaaleaderboard'] = ['MohaaPlayers.php', 'MohaaPlayers_Leaderboard'];
     $actions['mohaamatches'] = ['MohaaPlayers.php', 'MohaaPlayers_Matches'];

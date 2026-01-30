@@ -109,7 +109,7 @@ function template_mohaa_stats_main()
             echo '
                                     <tr>
                                         <td class="rank', $rankClass, '">#', $i + 1, '</td>
-                                        <td><a href="', $scripturl, '?action=mohaastats;sa=player;guid=', urlencode($player['guid']), '">', htmlspecialchars($player['name']), '</a></td>
+                                        <td><a href="', $scripturl, '?action=mohaastats;sa=player;guid=', urlencode($player['player_id'] ?? ''), '">', htmlspecialchars($player['player_name'] ?? 'Unknown'), '</a></td>
                                         <td>', number_format($player['kills'] ?? 0), '</td>
                                     </tr>';
         }
@@ -391,54 +391,78 @@ function template_mohaa_leaderboards()
         
         <div class="windowbg">';
     
-    $players = $context['mohaa_leaderboard']['players']['players'] ?? [];
+    $players = $context['mohaa_leaderboard']['players'] ?? [];
 
-    if (!empty($players)) {
-        echo '
-            <table class="mohaa-leaderboard table_grid">
-                <thead>
-                    <tr class="title_bar">
-                        <th class="rank">', $txt['mohaa_rank'], '</th>
-                        <th class="player">Player</th>
-                        <th class="stat">', $txt['mohaa_' . $currentStat] ?? ucfirst($currentStat), '</th>
-                        <th class="kills">', $txt['mohaa_kills'], '</th>
-                        <th class="deaths">', $txt['mohaa_deaths'], '</th>
-                        <th class="kd">', $txt['mohaa_kd_ratio'], '</th>
-                    </tr>
-                </thead>
-                <tbody>';
-        
-        foreach ($players as $i => $player) {
-            $rank = $i + 1;
-            $rankClass = $rank <= 3 ? ' rank-' . $rank : '';
-            
-            echo '
-                    <tr class="windowbg">
-                        <td class="rank', $rankClass, '">#', $rank, '</td>
-                        <td class="player">
-                            <a href="', $scripturl, '?action=mohaastats;sa=player;guid=', urlencode($player['guid']), '">', htmlspecialchars($player['name']), '</a>
-                        </td>
-                        <td class="stat">', mohaa_format_stat($player['value'] ?? 0, $currentStat), '</td>
-                        <td class="kills">', number_format($player['kills'] ?? 0), '</td>
-                        <td class="deaths">', number_format($player['deaths'] ?? 0), '</td>
-                        <td class="kd">', number_format($player['kd'] ?? 0, 2), '</td>
-                    </tr>';
-        }
-        
-        echo '
-                </tbody>
-            </table>';
-        
-        // Pagination
-        if (!empty($context['page_index'])) {
-            echo '
-            <div class="pagesection">
-                <div class="pagelinks">', $context['page_index'], '</div>
-            </div>';
-        }
-    } else {
-        echo '<p class="centertext">', $txt['mohaa_api_error'], '</p>';
-    }
+    echo '
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.0.0/styles/ag-grid.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.0.0/styles/ag-theme-alpine.css">
+        <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@31.0.0/dist/ag-grid-community.min.js"></script>
+
+        <style>
+            #grid-leaderboard {
+                height: 600px;
+                width: 100%;
+                border-radius: 8px;
+                overflow: hidden;
+            }
+        </style>
+
+        <div class="windowbg" style="padding: 0; border: none; background: transparent;">
+            <div id="grid-leaderboard" class="ag-theme-alpine"></div>
+        </div>';
+
+    echo '
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const leaderboardData = ', json_encode($players), ';
+            const gridOptions = {
+                rowData: leaderboardData,
+                columnDefs: [
+                    { 
+                        headerName: "#", 
+                        valueGetter: "node.rowIndex + 1", 
+                        width: 70, 
+                        pinned: "left",
+                        cellStyle: { fontWeight: "bold", textAlign: "center" }
+                    },
+                    { 
+                        headerName: "Player", 
+                        field: "player_name", 
+                        flex: 2, 
+                        pinned: "left",
+                        cellRenderer: params => {
+                            if (!params.data.player_id) return params.value;
+                            return `<a href="', $scripturl, '?action=mohaastats;sa=player;guid=${encodeURIComponent(params.data.player_id)}" style="font-weight:600; color:#3498db;">${params.value || "Unknown"}</a>`;
+                        }
+                    },
+                    { 
+                        headerName: "', $txt['mohaa_' . $currentStat] ?? ucfirst($currentStat), '", 
+                        field: "value", 
+                        flex: 1,
+                        cellStyle: { fontWeight: "bold", color: "#e67e22" }
+                    },
+                    { headerName: "Kills", field: "kills", flex: 1 },
+                    { headerName: "Deaths", field: "deaths", flex: 1 },
+                    { 
+                        headerName: "K/D", 
+                        valueGetter: params => {
+                            if (!params.data.deaths || params.data.deaths === 0) return params.data.kills || 0;
+                            return (params.data.kills / params.data.deaths).toFixed(2);
+                        },
+                        flex: 1
+                    }
+                ],
+                defaultColDef: {
+                    sortable: true,
+                    resizable: true,
+                    filter: true,
+                },
+                pagination: true,
+                paginationPageSize: 20
+            };
+            new agGrid.Grid(document.querySelector("#grid-leaderboard"), gridOptions);
+        });
+    </script>';
     
     echo '
         </div>
@@ -452,53 +476,93 @@ function template_mohaa_matches_list()
 {
     global $context, $txt, $scripturl;
     
-    $matches = $context['mohaa_matches']['matches'] ?? [];
+    $matches = $context['mohaa_matches']['list'] ?? [];
     
+    // Process matches for JS
+    foreach ($matches as &$m) {
+        $m['formatted_duration'] = gmdate('i:s', $m['duration'] ?? 0);
+        $m['formatted_date'] = timeformat($m['ended_at'] ?? $m['started_at'] ?? time());
+        // Short ID for display
+        $m['short_id'] = '#' . substr($m['id'] ?? 'N/A', 0, 8) . '...';
+    }
+
     echo '
     <div class="mohaa-matches-list">
-        <h2 class="category_header">', $txt['mohaa_matches'] ?? 'Recent Matches', '</h2>
-        
-        <div class="windowbg">';
-    
-    if (!empty($matches)) {
-        echo '
-            <table class="table_grid">
-                <thead>
-                    <tr class="title_bar">
-                        <th>Match ID</th>
-                        <th>Map</th>
-                        <th>Game Type</th>
-                        <th>Server</th>
-                        <th>Players</th>
-                        <th>Duration</th>
-                        <th>Date</th>
-                    </tr>
-                </thead>
-                <tbody>';
-        
-        foreach ($matches as $match) {
-            echo '
-                    <tr class="windowbg">
-                        <td><a href="', $scripturl, '?action=mohaaplayer;match=', $match['id'] ?? '', '">#', $match['id'] ?? 'N/A', '</a></td>
-                        <td>', htmlspecialchars($match['map'] ?? 'Unknown'), '</td>
-                        <td>', htmlspecialchars($match['game_type'] ?? 'TDM'), '</td>
-                        <td>', htmlspecialchars($match['server_name'] ?? 'Unknown Server'), '</td>
-                        <td>', (int)($match['player_count'] ?? 0), '</td>
-                        <td>', gmdate('i:s', $match['duration'] ?? 0), '</td>
-                        <td>', timeformat($match['ended_at'] ?? $match['started_at'] ?? time()), '</td>
-                    </tr>';
-        }
-        
-        echo '
-                </tbody>
-            </table>';
-    } else {
-        echo '<p class="centertext">', $txt['mohaa_no_matches'] ?? 'No recent matches found.', '</p>';
-    }
-    
-    echo '
+        <div class="mohaa-header-premium">
+            <h2 class="category_header">', $txt['mohaa_matches'] ?? 'Recent Matches', '</h2>
         </div>
-    </div>';
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.0.0/styles/ag-grid.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.0.0/styles/ag-theme-alpine.css">
+        <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@31.0.0/dist/ag-grid-community.min.js"></script>
+
+        <style>
+            .mohaa-header-premium {
+                margin-bottom: 20px;
+            }
+            #grid-matches {
+                height: 600px;
+                width: 100%;
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            }
+            .ag-theme-alpine {
+                --ag-header-background-color: #f8f9fa;
+                --ag-header-foreground-color: #2d3436;
+                --ag-row-hover-color: #f1f2f6;
+                --ag-selected-row-background-color: #e3f2fd;
+            }
+        </style>
+
+        <div class="windowbg" style="padding: 0; border: none; background: transparent;">
+            <div id="grid-matches" class="ag-theme-alpine"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const matchesData = ', json_encode($matches), ';
+            const gridOptions = {
+                rowData: matchesData,
+                columnDefs: [
+                    { 
+                        headerName: "Match ID", 
+                        field: "id", 
+                        flex: 1,
+                        cellRenderer: params => {
+                            if (!params.value) return "N/A";
+                            const shortId = params.value.substring(0, 8) + "...";
+                            return `<a href="', $scripturl, '?action=mohaastats;sa=match;id=${params.value}" style="font-weight:600; color:#3498db;">#${shortId}</a>`;
+                        }
+                    },
+                    { headerName: "Map", field: "map", flex: 1, filter: true },
+                    { headerName: "Game Type", field: "game_type", width: 120, filter: true },
+                    { headerName: "Server", field: "server_name", flex: 1.5, filter: true },
+                    { headerName: "Players", field: "player_count", width: 100, sortable: true },
+                    { headerName: "Duration", field: "formatted_duration", width: 100 },
+                    { headerName: "Date", field: "formatted_date", flex: 1.2, sort: "desc", comparator: (v1, v2, nodeA, nodeB) => {
+                        const tA = nodeA.data.ended_at || nodeA.data.started_at || 0;
+                        const tB = nodeB.data.ended_at || nodeB.data.started_at || 0;
+                        return tA - tB;
+                    }}
+                ],
+                defaultColDef: {
+                    sortable: true,
+                    resizable: true,
+                    filter: "agTextColumnFilter",
+                },
+                pagination: true,
+                paginationPageSize: 20,
+                paginationPageSizeSelector: [10, 20, 50, 100],
+                domLayout: "normal",
+                animateRows: true
+            };
+
+            const gridDiv = document.querySelector("#grid-matches");
+            new agGrid.Grid(gridDiv, gridOptions);
+        });
+    </script>';
 }
 
 /**
@@ -632,40 +696,27 @@ function template_mohaa_player()
     // Tab content - Weapons
     echo '
         <div class="mohaa-tab-content" id="tab-weapons" style="display:none;">
-            <div class="windowbg">';
-    
-    if (!empty($context['mohaa_player']['weapons'])) {
-        echo '
-                <table class="mohaa-weapons-table table_grid">
-                    <thead>
-                        <tr class="title_bar">
-                            <th>Weapon</th>
-                            <th>', $txt['mohaa_kills'], '</th>
-                            <th>', $txt['mohaa_headshots'], '</th>
-                            <th>', $txt['mohaa_accuracy'], '</th>
-                            <th>HS Rate</th>
-                        </tr>
-                    </thead>
-                    <tbody>';
-        
-        foreach ($context['mohaa_player']['weapons'] as $weapon) {
-            echo '
-                        <tr class="windowbg">
-                            <td>', htmlspecialchars($weapon['name']), '</td>
-                            <td>', number_format($weapon['kills']), '</td>
-                            <td>', number_format($weapon['headshots']), '</td>
-                            <td>', number_format($weapon['accuracy'], 1), '%</td>
-                            <td>', number_format($weapon['hs_rate'] ?? 0, 1), '%</td>
-                        </tr>';
-        }
-        
-        echo '
-                    </tbody>
-                </table>';
-    }
-    
-    echo '
+            <div class="windowbg" style="padding: 0;">
+                <div id="grid-player-weapons" class="ag-theme-alpine" style="height: 400px; width: 100%;"></div>
             </div>
+            <script>
+                document.addEventListener("DOMContentLoaded", function() {
+                    const weaponData = ', json_encode($context['mohaa_player']['weapons'] ?? []), ';
+                    const gridOptions = {
+                        rowData: weaponData,
+                        columnDefs: [
+                            { field: "name", headerName: "Weapon", flex: 1, pinned: "left" },
+                            { field: "kills", headerName: "Kills", width: 100, sort: "desc", valueFormatter: p => p.value.toLocaleString() },
+                            { field: "headshots", headerName: "HS", width: 100 },
+                            { field: "accuracy", headerName: "Accuracy", width: 110, valueFormatter: p => parseFloat(p.value).toFixed(1) + "%" },
+                            { field: "hs_rate", headerName: "HS Rate", width: 110, valueFormatter: p => parseFloat(p.value).toFixed(1) + "%" }
+                        ],
+                        defaultColDef: { sortable: true, resizable: true },
+                        domLayout: "autoHeight"
+                    };
+                    new agGrid.Grid(document.querySelector("#grid-player-weapons"), gridOptions);
+                });
+            </script>
         </div>';
     
     // Tab content - Matches

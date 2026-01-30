@@ -123,7 +123,7 @@ function MohaaStats_Actions(array &$actions): void
 {
     $actions['mohaastats'] = ['MohaaStats/MohaaStats.php', 'MohaaStats_Main'];
     $actions['mohaaapi'] = ['MohaaStats/MohaaStatsAPI.php', 'MohaaStats_APIProxy'];
-    $actions['mohaadashboard'] = ['MohaaStats/MohaaStats.php', 'MohaaStats_MainPage'];
+    $actions['mohaadashboard'] = ['MohaaPlayers.php', 'MohaaPlayers_Dashboard'];
     $actions['mohaaplayers'] = ['MohaaPlayers.php', 'MohaaPlayers_Main'];
     $actions['mohaaservers'] = ['MohaaServers.php', 'MohaaServers_Main'];
     $actions['mohaaachievements'] = ['MohaaAchievements.php', 'MohaaAchievements_Main'];
@@ -364,7 +364,7 @@ function MohaaStats_Main(): void
         'generate_token' => 'MohaaStats_HandleToken',
     ];
     
-    $sa = isset($_GET['sa']) && isset($subActions[$_GET['sa']]) ? $_GET['sa'] : 'main';
+    echo 'DEBUG: sa=' . ($_GET['sa'] ?? 'NONE') . "\n"; $sa = isset($_GET['sa']) && isset($subActions[$_GET['sa']]) ? $_GET['sa'] : 'main';
     
     // Load the right template
     loadTemplate($templateMap[$sa] ?? 'MohaaStats');
@@ -1028,24 +1028,80 @@ function MohaaStats_ServerDashboard(): void
 }
 
 /**
- * Battles list page
- * TODO: Implement when API endpoints are ready
+ * Battles list page - Shows recent matches from the API
  */
 function MohaaStats_BattlesList(): void
 {
-    global $context, $txt;
+    global $context, $txt, $scripturl;
+    
+    require_once(__DIR__ . '/MohaaStatsAPI.php');
     
     $context['page_title'] = $txt['mohaa_battles'] ?? 'Battles & Matches';
     $context['sub_template'] = 'mohaa_battles_list';
     
-    // Placeholder until API endpoints are ready
+    // Pagination
+    $limit = 25;
+    $page = isset($_GET['start']) ? max(1, (int)($_GET['start'] / $limit) + 1) : 1;
+    $offset = ($page - 1) * $limit;
+    
+    // Filters (read from query string)
+    $mapFilter = isset($_GET['map']) ? trim($_GET['map']) : '';
+    $gametypeFilter = isset($_GET['gametype']) ? trim($_GET['gametype']) : '';
+    
+    // Fetch matches from API
+    $api = new MohaaStatsAPIClient();
+    $matches = $api->getRecentMatches($limit, $offset);
+    
+    // Transform API response to template format
+    $battles = [];
+    if (!empty($matches)) {
+        foreach ($matches as $match) {
+            // Derive gametype from map prefix (e.g., dm/mohdm1 -> DM)
+            $mapName = $match['map'] ?? '';
+            $gameType = 'FFA';
+            if (stripos($mapName, 'obj/') === 0 || stripos($mapName, 'obj_') !== false) {
+                $gameType = 'OBJ';
+            } elseif (stripos($mapName, 'dm/') === 0 || stripos($mapName, 'mohdm') !== false) {
+                $gameType = 'DM';
+            } elseif (stripos($mapName, 'tdm/') === 0) {
+                $gameType = 'TDM';
+            }
+            
+            // Apply filters if set
+            if (!empty($mapFilter) && stripos($mapName, $mapFilter) === false) {
+                continue;
+            }
+            if (!empty($gametypeFilter) && $gameType !== $gametypeFilter) {
+                continue;
+            }
+            
+            $battles[] = [
+                'battle_id' => $match['id'] ?? '',
+                'map_name' => $mapName ?: 'Unknown Map',
+                'game_type' => $gameType,
+                'started_at' => $match['start_time'] ?? date('c'),
+                'duration_seconds' => (int)($match['duration'] ?? 0),
+                'total_players' => (int)($match['player_count'] ?? 0),
+                'total_kills' => (int)($match['kills'] ?? 0),
+                'total_deaths' => (int)($match['kills'] ?? 0), // Deaths ~= kills in most matches
+                'server_id' => $match['server_id'] ?? '',
+                'server_name' => $match['server_name'] ?? 'Unknown Server',
+                // Team data would require match detail query - use placeholders
+                'final_score_allies' => 0,
+                'final_score_axis' => 0,
+                'winner_team' => '', // Will show as "Draw" in template
+            ];
+        }
+    }
+    
     $context['mohaa_battles'] = [
-        'list' => [],
-        'total' => 0,
-        'map_filter' => '',
-        'gametype_filter' => '',
+        'list' => $battles,
+        'total' => count($battles),
+        'map_filter' => $mapFilter,
+        'gametype_filter' => $gametypeFilter,
     ];
     
+    // Simple pagination
     $context['page_index'] = '';
 }
 
