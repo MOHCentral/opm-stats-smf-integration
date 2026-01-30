@@ -349,7 +349,8 @@ function template_dashboard_leaderboard()
 {
     global $context, $txt, $scripturl;
 
-    $players = $context['mohaa_global']['leaderboard'] ?? [];
+    $leaderboardData = $context['mohaa_global']['leaderboard'] ?? [];
+    $players = $leaderboardData['players'] ?? [];
 
     echo '
     <div class="mohaa-panel">

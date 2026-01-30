@@ -949,7 +949,7 @@ function MohaaPlayers_Leaderboard(): void
             'period' => $period,
             'valid_stats' => $validStats,
             'valid_periods' => $validPeriods,
-            'players' => $leaderboard,
+            'players' => $leaderboard['players'] ?? [],
         ];
     } else {
         // Dashboard: Show multiple leaderboard widgets
@@ -1013,8 +1013,8 @@ function MohaaPlayers_Leaderboard(): void
         $requests = [];
         foreach ($categories as $key => $meta) {
             $requests[$key] = [
-                'endpoint' => '/leaderboard/' . $key,
-                'params' => ['limit' => 5],
+                'endpoint' => '/stats/leaderboard/global',
+                'params' => ['stat' => $key, 'limit' => 5],
             ];
         }
         
