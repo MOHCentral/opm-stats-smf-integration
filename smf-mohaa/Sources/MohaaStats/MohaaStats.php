@@ -364,7 +364,7 @@ function MohaaStats_Main(): void
         'generate_token' => 'MohaaStats_HandleToken',
     ];
     
-    echo 'DEBUG: sa=' . ($_GET['sa'] ?? 'NONE') . "\n"; $sa = isset($_GET['sa']) && isset($subActions[$_GET['sa']]) ? $_GET['sa'] : 'main';
+    $sa = isset($_GET['sa']) && isset($subActions[$_GET['sa']]) ? $_GET['sa'] : 'main';
     
     // Load the right template
     loadTemplate($templateMap[$sa] ?? 'MohaaStats');

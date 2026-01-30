@@ -374,7 +374,7 @@ function template_dashboard_leaderboard()
         echo '
                     <tr>
                         <td class="rank rank-', $rank, '">', $rank, '</td>
-                        <td><a href="', $scripturl, '?action=mohaastats;sa=player;guid=', urlencode($player['guid'] ?? $player['id'] ?? ''), '">', $player['name'], '</a></td>
+                        <td><a href="', $scripturl, '?action=mohaastats;sa=player;guid=', urlencode($player['guid'] ?? $player['player_id'] ?? ''), '">', $player['player_name'], '</a></td>
                         <td>', number_format($player['kills'] ?? 0), '</td>
                         <td>', $kd, '</td>
                     </tr>';
