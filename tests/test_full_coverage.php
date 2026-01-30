@@ -41,13 +41,14 @@ function assertNotNull($value, $name) {
     }
 }
 
-function assertNull($value, $name) {
+function assertEmptyResult($value, $name) {
     global $failures, $passes;
-    if ($value === null) {
-        echo "[PASS] $name is null (as expected)\n";
+    // With strict schema validation, errors return empty arrays/objects or 0
+    if (empty($value) && $value !== null) {
+        echo "[PASS] $name is empty (as expected for error)\n";
         $passes++;
     } else {
-        echo "[FAIL] $name should be null\n";
+        echo "[FAIL] $name should be empty, got " . print_r($value, true) . "\n";
         $failures++;
     }
 }
@@ -111,7 +112,7 @@ if ($perf) {
     assertType($perf['points'], 'int', 'points');
     assertType($perf['is_vip'], 'bool', 'is_vip');
 } else {
-    echo "[FAIL] getPlayerPerformance returned null\n";
+    echo "[FAIL] getPlayerPerformance returned null/empty\n";
     $failures++;
 }
 
@@ -127,18 +128,19 @@ if ($castTest) {
 
 // 3. Test Error Resilience
 echo "\nTesting Error Resilience...\n";
+// Note: API Client now returns empty array/object on failure instead of null to prevent crashes
 
 echo "Testing 500 Error...\n";
 $res500 = $api->getPlayerStats('ERROR_500');
-assertNull($res500, "Result for ERROR_500");
+assertEmptyResult($res500, "Result for ERROR_500");
 
 echo "Testing 404 Error...\n";
 $res404 = $api->getPlayerStats('ERROR_404');
-assertNull($res404, "Result for ERROR_404");
+assertEmptyResult($res404, "Result for ERROR_404");
 
 echo "Testing Invalid JSON...\n";
 $resJson = $api->getPlayerStats('ERROR_JSON');
-assertNull($resJson, "Result for ERROR_JSON");
+assertEmptyResult($resJson, "Result for ERROR_JSON");
 
 // 4. Test New Auth Methods and Stubs
 echo "\nTesting New Auth Methods...\n";
