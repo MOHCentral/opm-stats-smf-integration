@@ -96,6 +96,15 @@ foreach ($methods as $method => $args) {
     assertNotNull($result, "$method result");
     if (is_array($result) && !empty($result)) {
         echo "[INFO] $method returned data\n";
+        if ($method === 'getMapsList') {
+             if (isset($result[0]['id']) && $result[0]['id'] === 'testmap') {
+                 echo "[PASS] getMapsList verified content\n";
+                 global $passes; $passes++;
+             } else {
+                 echo "[FAIL] getMapsList missing expected content\n";
+                 global $failures; $failures++;
+             }
+        }
     } elseif (is_int($result)) {
          echo "[INFO] $method returned int: $result\n";
     }
@@ -139,6 +148,10 @@ assertNull($res404, "Result for ERROR_404");
 echo "Testing Invalid JSON...\n";
 $resJson = $api->getPlayerStats('ERROR_JSON');
 assertNull($resJson, "Result for ERROR_JSON");
+
+echo "Testing Schema Invalid (Missing Required Field)...\n";
+$resSchema = $api->getPlayerStats('ERROR_SCHEMA_INVALID');
+assertNull($resSchema, "Result for ERROR_SCHEMA_INVALID");
 
 // 4. Test New Auth Methods and Stubs
 echo "\nTesting New Auth Methods...\n";

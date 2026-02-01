@@ -22,6 +22,12 @@ if (strpos($uri, 'ERROR_JSON') !== false) {
     exit;
 }
 
+if (strpos($uri, 'ERROR_SCHEMA_INVALID') !== false) {
+    // Missing required 'guid' field for player_stats schema
+    // This should cause the validator to return null
+    response(['name' => 'InvalidPlayer', 'kills' => 100]);
+}
+
 // Helper to send response
 function response($data, $code = 200) {
     http_response_code($code);
@@ -76,6 +82,7 @@ if (strpos($uri, '/api/v1/stats/player/') !== false) {
     if (strpos($uri, 'CAST_TEST') !== false) {
         response([
             'name' => 'CastingTester',
+            'guid' => '987654', // Added guid to satisfy schema
             'kills' => '999',
             'accuracy' => '25.5',
             'is_online' => '1'
@@ -96,9 +103,11 @@ if (strpos($uri, '/api/v1/achievements/leaderboard') !== false) {
 if (strpos($uri, '/api/v1/achievements/recent') !== false) {
     response(['achievements' => []]);
 }
-if (strpos($uri, '/api/v1/achievements/') !== false) {
-    // Single achievement or list
+if (preg_match('#/api/v1/achievements/(\d+)#', $uri)) {
     response(['id' => 1, 'name' => 'First Blood']);
+}
+if (strpos($uri, '/api/v1/achievements/') !== false) {
+    response([['id' => 1, 'name' => 'First Blood']]);
 }
 if (strpos($uri, '/api/v1/achievements') !== false) {
     response([]);
@@ -127,7 +136,7 @@ if (strpos($uri, '/api/v1/stats/maps/popularity') !== false) {
     response([]);
 }
 if (strpos($uri, '/api/v1/stats/maps/list') !== false) {
-    response([]);
+    response([['id'=>'testmap', 'name'=>'Test Map']]);
 }
 if (strpos($uri, '/api/v1/stats/maps') !== false) {
     response([]);
