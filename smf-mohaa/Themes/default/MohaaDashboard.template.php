@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * MOHAA Dashboard Template
  * Shows ALL global stats and player's personal stats

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * MOHAA Tournament Detail - The Ultimate Competitive Dashboard
  * 

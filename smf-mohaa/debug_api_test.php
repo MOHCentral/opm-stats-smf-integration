@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Debug API Connection Test
  * Run: php debug_api_test.php

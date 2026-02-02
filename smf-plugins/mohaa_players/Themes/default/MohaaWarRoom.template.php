@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * MOHAA Enhanced Stats Dashboard - War Room
  * Hybrid Design: Modern Grid Layout + SMF Integration

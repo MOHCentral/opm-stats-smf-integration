@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * MOHAA Stats API Client - OPTIMIZED with parallel requests
  */

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Complete Install/Repair Script for MOHAA Team Ecosystem
  * Creates all necessary tables if they don't exist.

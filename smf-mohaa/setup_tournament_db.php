@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Setup Tournament Database Tables
  * Run this once to install the schema.

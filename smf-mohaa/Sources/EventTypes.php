@@ -1,9 +1,11 @@
 <?php
+declare(strict_types=1);
+
 /**
  * Event Type Constants
  * 
  * GENERATED FILE - DO NOT EDIT DIRECTLY
- * Generated at: 2026-02-02T08:30:48.524343
+ * Generated at: 2026-02-02T08:59:04.114551
  * Source: opm-stats-api/web/static/openapi.yaml
  * 
  * To add new event types, edit openapi.yaml and run `make generate-types`

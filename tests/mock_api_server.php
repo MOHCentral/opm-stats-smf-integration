@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 // Simple Mock API Server
 header('Content-Type: application/json');
 

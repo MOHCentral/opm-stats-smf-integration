@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Player Comparison Template
  * Advanced head-to-head analysis with radar charts, differentials, winner analysis

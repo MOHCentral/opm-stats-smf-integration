@@ -1,5 +1,6 @@
 #!/usr/bin/env php
 <?php
+declare(strict_types=1);
 /**
  * Quick hook registration script
  * Run from SMF root: php smf-mohaa/register_hooks.php

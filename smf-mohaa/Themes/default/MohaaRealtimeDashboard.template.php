@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Real-Time Stats Dashboard
  * 

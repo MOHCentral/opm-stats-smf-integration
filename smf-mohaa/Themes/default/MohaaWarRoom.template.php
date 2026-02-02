@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * MOHAA Enhanced Stats Dashboard - War Room
  * Hybrid Design: Modern Grid Layout + SMF Integration
@@ -139,7 +140,15 @@ function template_mohaa_war_room()
                 <div class="header-stats">
                     <div class="mini-stat drill-clickable" data-stat="kills" data-dimension="weapon">
                         <span class="value">'.number_format($player['kills'] ?? 0).'</span>
-                        <span class="label">Kills</span>
+                        <span class="label">Total Kills</span>
+                    </div>
+                    <div class="mini-stat" title="Kills vs human players">
+                        <span class="value">'.number_format($player['player_kills'] ?? 0).'</span>
+                        <span class="label">Player Kills</span>
+                    </div>
+                    <div class="mini-stat" title="Kills vs bots">
+                        <span class="value">'.number_format($player['bot_kills'] ?? 0).'</span>
+                        <span class="label">Bot Kills</span>
                     </div>
                     <div class="mini-stat drill-clickable" data-stat="deaths" data-dimension="weapon">
                         <span class="value">'.number_format($player['deaths'] ?? 0).'</span>

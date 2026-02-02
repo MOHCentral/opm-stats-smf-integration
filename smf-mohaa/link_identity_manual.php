@@ -1,5 +1,6 @@
 #!/usr/bin/env php
 <?php
+declare(strict_types=1);
 /**
  * Link elgan's SMF account (ID: 1) to game GUID
  * This script finds the SMF installation and uses its database connection
