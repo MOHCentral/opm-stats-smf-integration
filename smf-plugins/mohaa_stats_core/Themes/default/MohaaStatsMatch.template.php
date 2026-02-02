@@ -337,7 +337,7 @@ function template_match_timeline($events)
         
         // Construct Description
         $desc = match($type) {
-            'kill' => "<strong>$actor</strong> killed <strong>$target</strong>" . ($detail ? " with $detail" : ""),
+            'player_kill' => "<strong>$actor</strong> killed <strong>$target</strong>" . ($detail ? " with $detail" : ""),
             'headshot' => "<strong>$actor</strong> headshotted <strong>$target</strong>" . ($detail ? " with $detail" : ""),
             'flag_capture' => "<strong>$actor</strong> captured the flag!",
             'match_start' => "Match Started on " . ($detail ?: "Map"),
@@ -346,7 +346,7 @@ function template_match_timeline($events)
         };
         
         $icon = match($type) {
-            'kill' => '💀',
+            'player_kill' => '💀',
             'headshot' => '🎯',
             'flag_capture' => '🚩',
             'match_start' => '🏁',
