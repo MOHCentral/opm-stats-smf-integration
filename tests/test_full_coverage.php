@@ -52,6 +52,17 @@ function assertNull($value, $name) {
     }
 }
 
+function assertValue($value, $expectedValue, $name) {
+    global $failures, $passes;
+    if ($value === $expectedValue) {
+        echo "[PASS] $name has expected value\n";
+        $passes++;
+    } else {
+        echo "[FAIL] $name value mismatch. Expected " . json_encode($expectedValue) . ", got " . json_encode($value) . "\n";
+        $failures++;
+    }
+}
+
 echo "Starting Full Coverage Test Suite...\n";
 
 // 1. Test Standard Methods
@@ -130,15 +141,25 @@ echo "\nTesting Error Resilience...\n";
 
 echo "Testing 500 Error...\n";
 $res500 = $api->getPlayerStats('ERROR_500');
-assertNull($res500, "Result for ERROR_500");
+assertNotNull($res500, "Result for ERROR_500 (Resilience)");
+if ($res500) {
+    assertType($res500['kills'], 'int', 'res500 kills is int default 0');
+    assertValue($res500['kills'], 0, 'res500 kills value');
+}
 
 echo "Testing 404 Error...\n";
 $res404 = $api->getPlayerStats('ERROR_404');
-assertNull($res404, "Result for ERROR_404");
+assertNotNull($res404, "Result for ERROR_404 (Resilience)");
+if ($res404) {
+    assertType($res404['kills'], 'int', 'res404 kills is int default 0');
+}
 
 echo "Testing Invalid JSON...\n";
 $resJson = $api->getPlayerStats('ERROR_JSON');
-assertNull($resJson, "Result for ERROR_JSON");
+assertNotNull($resJson, "Result for ERROR_JSON (Resilience)");
+if ($resJson) {
+    assertType($resJson['kills'], 'int', 'resJson kills is int default 0');
+}
 
 // 4. Test New Auth Methods and Stubs
 echo "\nTesting New Auth Methods...\n";
