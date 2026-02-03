@@ -5,7 +5,7 @@ declare(strict_types=1);
  * Event Type Constants
  * 
  * GENERATED FILE - DO NOT EDIT DIRECTLY
- * Generated at: 2026-02-02T08:59:04.114551
+ * Generated at: 2026-02-02T21:53:10.462973
  * Source: opm-stats-api/web/static/openapi.yaml
  * 
  * To add new event types, edit openapi.yaml and run `make generate-types`
@@ -34,7 +34,6 @@ class EventTypes
     public const DEATH = 'death';
     public const DAMAGE = 'damage';
     public const PLAYER_PAIN = 'player_pain';
-    public const HEADSHOT = 'headshot';
     public const PLAYER_SUICIDE = 'player_suicide';
     public const PLAYER_CRUSHED = 'player_crushed';
     public const PLAYER_TELEFRAGGED = 'player_telefragged';
