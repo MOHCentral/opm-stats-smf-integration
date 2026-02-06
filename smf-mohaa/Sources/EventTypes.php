@@ -5,7 +5,7 @@ declare(strict_types=1);
  * Event Type Constants
  * 
  * GENERATED FILE - DO NOT EDIT DIRECTLY
- * Generated at: 2026-02-02T21:53:10.462973
+ * Generated at: 2026-02-05T10:35:52.149792
  * Source: opm-stats-api/web/static/openapi.yaml
  * 
  * To add new event types, edit openapi.yaml and run `make generate-types`
@@ -24,7 +24,6 @@ class EventTypes
     public const GAME_END = 'game_end';
     public const MATCH_START = 'match_start';
     public const MATCH_END = 'match_end';
-    public const MATCH_OUTCOME = 'match_outcome';
     public const ROUND_START = 'round_start';
     public const ROUND_END = 'round_end';
     public const WARMUP_START = 'warmup_start';
@@ -77,15 +76,10 @@ class EventTypes
     public const ARMOR_PICKUP = 'armor_pickup';
     public const VEHICLE_ENTER = 'vehicle_enter';
     public const VEHICLE_EXIT = 'vehicle_exit';
-    public const VEHICLE_DEATH = 'vehicle_death';
     public const VEHICLE_CRASH = 'vehicle_crash';
     public const VEHICLE_CHANGE = 'vehicle_change';
     public const TURRET_ENTER = 'turret_enter';
     public const TURRET_EXIT = 'turret_exit';
-    public const SERVER_INIT = 'server_init';
-    public const SERVER_START = 'server_start';
-    public const SERVER_SHUTDOWN = 'server_shutdown';
-    public const SERVER_SPAWNED = 'server_spawned';
     public const SERVER_CONSOLE_COMMAND = 'server_console_command';
     public const HEARTBEAT = 'heartbeat';
     public const MAP_INIT = 'map_init';
@@ -97,7 +91,6 @@ class EventTypes
     public const MAP_CHANGE_START = 'map_change_start';
     public const MAP_RESTART = 'map_restart';
     public const TEAM_JOIN = 'team_join';
-    public const TEAM_CHANGE = 'team_change';
     public const TEAM_WIN = 'team_win';
     public const VOTE_START = 'vote_start';
     public const VOTE_PASSED = 'vote_passed';
@@ -123,7 +116,7 @@ class EventTypes
     public const TEAMKILL_KICK = 'teamkill_kick';
     public const PLAYER_AUTH = 'player_auth';
     public const ACCURACY_SUMMARY = 'accuracy_summary';
-    public const IDENTITY_CLAIM = 'identity_claim';
+    public const MATCH_OUTCOME = 'match_outcome';
 
     /**
      * Map of aliases to canonical event types.
