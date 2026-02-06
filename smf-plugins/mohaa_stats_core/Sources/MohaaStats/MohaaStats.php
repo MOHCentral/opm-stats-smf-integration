@@ -306,12 +306,12 @@ function MohaaStats_Player(): void
     
     // Parallel Fetching for Speed
     $requests = [
-        'info' => ['endpoint' => '/stats/player/' . urlencode($guid)],
-        'deep' => ['endpoint' => '/stats/player/' . urlencode($guid) . '/deep'],
-        'playstyle' => ['endpoint' => '/stats/player/' . urlencode($guid) . '/playstyle'],
-        'weapons' => ['endpoint' => '/stats/player/' . urlencode($guid) . '/weapons'],
-        'matches' => ['endpoint' => '/stats/player/' . urlencode($guid) . '/matches', 'params' => ['limit' => 10]],
-        'achievements' => ['endpoint' => '/achievements/player/' . urlencode($guid)],
+        'info' => ['endpoint' => '/stats/player/' . urlencode($guid), 'schema' => 'player_info'],
+        'deep' => ['endpoint' => '/stats/player/' . urlencode($guid) . '/deep', 'schema' => 'player_deep'],
+        'playstyle' => ['endpoint' => '/stats/player/' . urlencode($guid) . '/playstyle', 'schema' => 'player_playstyle'],
+        'weapons' => ['endpoint' => '/stats/player/' . urlencode($guid) . '/weapons', 'schema' => 'player_weapons'],
+        'matches' => ['endpoint' => '/stats/player/' . urlencode($guid) . '/matches', 'params' => ['limit' => 10], 'schema' => 'player_matches'],
+        'achievements' => ['endpoint' => '/achievements/player/' . urlencode($guid), 'schema' => 'any_array'],
     ];
     
     $results = $api->getMultiple($requests);
@@ -717,9 +717,9 @@ function MohaaStats_ServerDashboard(): void
     
     // Fetch parallel
     $requests = [
-        'activity' => ['endpoint' => '/stats/global/activity'],
-        'maps' => ['endpoint' => '/stats/maps/popularity'],
-        'recent_matches' => ['endpoint' => '/stats/matches', 'params' => ['limit' => 10]],
+        'activity' => ['endpoint' => '/stats/global/activity', 'schema' => 'server_activity'],
+        'maps' => ['endpoint' => '/stats/maps/popularity', 'schema' => 'any_array'],
+        'recent_matches' => ['endpoint' => '/stats/matches', 'params' => ['limit' => 10], 'schema' => 'recent_matches'],
     ];
     
     $results = $api->getMultiple($requests);
