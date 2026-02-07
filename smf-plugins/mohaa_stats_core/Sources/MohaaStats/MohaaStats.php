@@ -306,12 +306,12 @@ function MohaaStats_Player(): void
     
     // Parallel Fetching for Speed
     $requests = [
-        'info' => ['endpoint' => '/stats/player/' . urlencode($guid)],
-        'deep' => ['endpoint' => '/stats/player/' . urlencode($guid) . '/deep'],
-        'playstyle' => ['endpoint' => '/stats/player/' . urlencode($guid) . '/playstyle'],
-        'weapons' => ['endpoint' => '/stats/player/' . urlencode($guid) . '/weapons'],
-        'matches' => ['endpoint' => '/stats/player/' . urlencode($guid) . '/matches', 'params' => ['limit' => 10]],
-        'achievements' => ['endpoint' => '/achievements/player/' . urlencode($guid)],
+        'info' => ['endpoint' => '/stats/player/' . urlencode($guid), 'schema' => MohaaStatsSchemas::PLAYER_BASIC],
+        'deep' => ['endpoint' => '/stats/player/' . urlencode($guid) . '/deep', 'schema' => MohaaStatsSchemas::PLAYER_DEEP],
+        'playstyle' => ['endpoint' => '/stats/player/' . urlencode($guid) . '/playstyle', 'schema' => MohaaStatsSchemas::PLAYER_PLAYSTYLE],
+        'weapons' => ['endpoint' => '/stats/player/' . urlencode($guid) . '/weapons', 'schema' => ['type' => 'array_of_WEAPON_BASIC']],
+        'matches' => ['endpoint' => '/stats/player/' . urlencode($guid) . '/matches', 'params' => ['limit' => 10], 'schema' => MohaaStatsSchemas::MATCH_LIST],
+        'achievements' => ['endpoint' => '/achievements/player/' . urlencode($guid), 'schema' => ['type' => 'array']],
     ];
     
     $results = $api->getMultiple($requests);
@@ -717,9 +717,9 @@ function MohaaStats_ServerDashboard(): void
     
     // Fetch parallel
     $requests = [
-        'activity' => ['endpoint' => '/stats/global/activity'],
-        'maps' => ['endpoint' => '/stats/maps/popularity'],
-        'recent_matches' => ['endpoint' => '/stats/matches', 'params' => ['limit' => 10]],
+        'activity' => ['endpoint' => '/stats/global/activity', 'schema' => ['activity' => ['type' => 'array']]],
+        'maps' => ['endpoint' => '/stats/maps/popularity', 'schema' => ['type' => 'array_of_MAP_BASIC']],
+        'recent_matches' => ['endpoint' => '/stats/matches', 'params' => ['limit' => 10], 'schema' => MohaaStatsSchemas::MATCH_LIST],
     ];
     
     $results = $api->getMultiple($requests);
