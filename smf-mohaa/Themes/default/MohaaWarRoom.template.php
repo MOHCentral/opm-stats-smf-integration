@@ -37,8 +37,6 @@ function template_mohaa_war_room()
     echo '
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <style>
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-    <style>
         .mohaa-dashboard-container { padding: 10px; }
         .mohaa-grid {
             display: grid;
@@ -213,20 +211,20 @@ function template_mohaa_war_room()
         </style>
 
         <!-- Navigation Tabs -->
-        <div class="mohaa-tabs">
-            <a href="#" onclick="showTab(\'peak\'); return false;" class="mohaa-tab">⚡ Peak</a>
-            <a href="#" onclick="showTab(\'forecast\'); return false;" class="mohaa-tab">🔮 Forecast</a>
-            <a href="#" onclick="showTab(\'combat\'); return false;" class="mohaa-tab active">⚔️ Combat</a>
-            <a href="#" onclick="showTab(\'signature\'); return false;" class="mohaa-tab">🎯 Signature</a>
-            <a href="#" onclick="showTab(\'weapons\'); return false;" class="mohaa-tab">🔫 Armoury</a>
-            <a href="#" onclick="showTab(\'movement\'); return false;" class="mohaa-tab">🏃 Movement</a>
-            <a href="#" onclick="showTab(\'gameflow\'); return false;" class="mohaa-tab">🎮 Game</a>
-            <a href="#" onclick="showTab(\'gametypes\'); return false;" class="mohaa-tab">🕹️ Game Types</a>
-            <a href="#" onclick="showTab(\'interaction\'); return false;" class="mohaa-tab">🗣️ Interaction</a>
-            <a href="#" onclick="showTab(\'teams\'); return false;" class="mohaa-tab">👥 Teams</a>
-            <a href="#" onclick="showTab(\'maps\'); return false;" class="mohaa-tab">🗺️ Maps</a>
-            <a href="#" onclick="showTab(\'matches\'); return false;" class="mohaa-tab">📊 Matches</a>
-            <a href="#" onclick="showTab(\'achievements\'); return false;" class="mohaa-tab">🏆 Medals</a>
+        <div class="mohaa-tabs" id="mohaa-tab-nav">
+            <a href="#" onclick="showTab(\'peak\'); return false;" data-tab="peak" class="mohaa-tab">⚡ Peak</a>
+            <a href="#" onclick="showTab(\'forecast\'); return false;" data-tab="forecast" class="mohaa-tab">🔮 Forecast</a>
+            <a href="#" onclick="showTab(\'combat\'); return false;" data-tab="combat" class="mohaa-tab active">⚔️ Combat</a>
+            <a href="#" onclick="showTab(\'signature\'); return false;" data-tab="signature" class="mohaa-tab">🎯 Signature</a>
+            <a href="#" onclick="showTab(\'weapons\'); return false;" data-tab="weapons" class="mohaa-tab">🔫 Armoury</a>
+            <a href="#" onclick="showTab(\'movement\'); return false;" data-tab="movement" class="mohaa-tab">🏃 Movement</a>
+            <a href="#" onclick="showTab(\'gameflow\'); return false;" data-tab="gameflow" class="mohaa-tab">🎮 Game</a>
+            <a href="#" onclick="showTab(\'gametypes\'); return false;" data-tab="gametypes" class="mohaa-tab">🕹️ Game Types</a>
+            <a href="#" onclick="showTab(\'interaction\'); return false;" data-tab="interaction" class="mohaa-tab">🗣️ Interaction</a>
+            <a href="#" onclick="showTab(\'teams\'); return false;" data-tab="teams" class="mohaa-tab">👥 Teams</a>
+            <a href="#" onclick="showTab(\'maps\'); return false;" data-tab="maps" class="mohaa-tab">🗺️ Maps</a>
+            <a href="#" onclick="showTab(\'matches\'); return false;" data-tab="matches" class="mohaa-tab">📊 Matches</a>
+            <a href="#" onclick="showTab(\'achievements\'); return false;" data-tab="achievements" class="mohaa-tab">🏆 Medals</a>
         </div>
         
         <!-- ======================= PEAK PERFORMANCE TAB ======================= -->
@@ -457,15 +455,12 @@ function template_mohaa_war_room()
         </div>
 
         
+        <!-- ======================= TEAMS TAB ======================= -->
+        <div id="tab-teams" class="tab-content" style="display: none;">
+            ', template_war_room_team_content($player['team_history'] ?? []), '
+        </div>
+
         <!-- ======================= MAPS TAB ======================= -->
-        <div id="tab-teams" class="tab-content" style="display: none;">
-            ', template_war_room_team_content($player['team_history'] ?? []), '
-        </div>
-
-        <div id="tab-teams" class="tab-content" style="display: none;">
-            ', template_war_room_team_content($player['team_history'] ?? []), '
-        </div>
-
         <div id="tab-maps" class="tab-content" style="display: none;">
             <div class="windowbg stat-card">
                 <h3>Map Performance</h3>
@@ -597,8 +592,6 @@ function template_mohaa_war_room()
             html += "</tbody></table>";
             document.getElementById("drilldown-table").innerHTML = html;
         }
-
-        });
 
         let heatmapInstance = null;
         let activeHeatmapMap = "";
@@ -810,35 +803,44 @@ function template_mohaa_war_room()
                  mapCtx.innerHTML = "<p class=\'centertext\' style=\'padding-top: 100px; opacity: 0.6;\'>Not enough map data yet.</p>";
             }
             
-            // 4. Skill Spider (Radar) - NEW
+            // 4. Skill Spider (Radar) - uses actual API fields
             const spiderCtx = document.querySelector("#chart-skill-spider");
             if (spiderCtx) {
-                // Expanded Player DNA Metrics
-                const surgical = Math.min(100, (player.marksman_index || 0) * 100); // Headshot weight
-                const unstoppable = Math.min(100, (player.best_killstreak || 0) * 5); // 20 streak = 100
-                const survivalist = Math.min(100, (player.survival_rate || 0) * 100); 
-                const tactical = Math.min(100, (player.objective_focus || 0) * 100);
-                const consistency = Math.min(100, (player.consistency_score || 0) * 100);
-                
+                const kills = player.kills || 0;
+                const deaths = player.deaths || 0;
+                const headshots = player.headshots || 0;
+                const playtimeHrs = (player.playtime_seconds || 0) / 3600;
+
+                // Accuracy: 40% = perfect score
+                const accuracy = Math.min(100, (player.accuracy || 0) * 2.5);
+                // Lethality: kills per hour, 20 kph = 100
+                const lethality = Math.min(100, (kills / Math.max(0.1, playtimeHrs)) * 5);
+                // Survival: KD ratio, 3.0 = 90
+                const survival = Math.min(100, (player.kd_ratio || 0) * 30);
+                // Precision: headshot %, 50% = 100
+                const precision = kills > 0 ? Math.min(100, (headshots / kills) * 200) : 0;
+                // Aggression: damage dealt per death, 500 = 100
+                const aggression = deaths > 0 ? Math.min(100, ((player.damage_dealt || 0) / deaths) / 5) : 0;
+
                 const options = {
                     series: [{
                         name: "You",
-                        data: [surgical, unstoppable, survivalist, tactical, consistency]
+                        data: [accuracy, lethality, survival, precision, aggression]
                     }],
-                    chart: { 
-                        type: "radar", 
-                        height: 280, 
-                        background: "transparent", 
+                    chart: {
+                        type: "radar",
+                        height: 280,
+                        background: "transparent",
                         toolbar: { show: false }
                     },
-                    xaxis: { 
-                        categories: ["Surgical", "Unstoppable", "Survivalist", "Tactical", "Consistency"],
-                        labels: { 
-                            style: { 
-                                colors: ["#f44336", "#ff9800", "#4caf50", "#2196f3", "#9c27b0"],
+                    xaxis: {
+                        categories: ["Accuracy", "Lethality", "Survival", "Precision", "Aggression"],
+                        labels: {
+                            style: {
+                                colors: ["#4caf50", "#ff9800", "#2196f3", "#f44336", "#9c27b0"],
                                 fontSize: "11px",
                                 fontWeight: "bold"
-                            } 
+                            }
                         }
                     },
                     stroke: { width: 2, colors: ["#4a6b8a"] },
@@ -1041,6 +1043,29 @@ function template_mohaa_war_room()
         
         // Make showTab available globally
         window.showTab = showTab;
+
+        // Attach tab click handlers via event delegation (Firefox + Chrome safe)
+        document.addEventListener("DOMContentLoaded", function() {
+            var tabNav = document.getElementById("mohaa-tab-nav");
+            if (tabNav) {
+                tabNav.addEventListener("click", function(e) {
+                    // Walk up from target to find the [data-tab] element (avoids closest() quirks)
+                    var el = e.target;
+                    while (el && el !== tabNav) {
+                        if (el.getAttribute && el.getAttribute("data-tab")) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            showTab(el.getAttribute("data-tab"));
+                            return;
+                        }
+                        el = el.parentNode;
+                    }
+                });
+                console.log("War Room tabs initialized via delegation");
+            } else {
+                console.error("War Room: tab nav container not found");
+            }
+        });
         
         // =============================================================================
         // DRILL-DOWN SYSTEM - Click any stat for deeper breakdown
@@ -1555,12 +1580,12 @@ function template_war_room_damage_content($player) {
 
 function template_war_room_special_stats_content($player) {
     $specials = [
-        '🚗 Roadkills' => $player['roadkills'] ?? 0,
-        '🔨 Bash Kills' => $player['bash_kills'] ?? 0,
+        '� Bash Kills' => $player['bash_kills'] ?? 0,
+        '💣 Grenade Kills' => $player['grenade_kills'] ?? 0,
         '🤕 Team Kills' => $player['team_kills'] ?? 0,
         '☠️ Suicides' => $player['suicides'] ?? 0,
         '🥜 Nutshots' => $player['nutshots'] ?? 0,
-        '🗡️ Backstabs' => $player['backstabs'] ?? 0,
+        '👊 Melee Kills' => $player['melee_kills'] ?? 0,
     ];
     
     $html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;">';
@@ -2771,6 +2796,94 @@ function template_war_room_bot_section($data) {
     
     $output .= '</div>';
     return $output;
+}
+
+// =============================================================================
+// TEAM HISTORY SECTION
+// =============================================================================
+function template_war_room_team_content(array $teamHistory): string
+{
+    if (empty($teamHistory)) {
+        return '
+        <div class="windowbg stat-card">
+            <h3>👥 Team History</h3>
+            <div style="text-align: center; padding: 40px; opacity: 0.6;">
+                <div style="font-size: 3em; margin-bottom: 10px;">👥</div>
+                <div>No team history data available yet.</div>
+            </div>
+        </div>';
+    }
+
+    $html = '<div class="mohaa-grid">';
+    
+    // Summary card
+    $totalMatches = 0;
+    $totalWins = 0;
+    $teamCounts = ['allies' => 0, 'axis' => 0, 'spectator' => 0];
+    
+    foreach ($teamHistory as $t) {
+        $team = strtolower($t['team'] ?? '');
+        $matches = $t['matches_played'] ?? 0;
+        $wins = $t['matches_won'] ?? 0;
+        $totalMatches += $matches;
+        $totalWins += $wins;
+        if (isset($teamCounts[$team])) {
+            $teamCounts[$team] += $matches;
+        }
+    }
+    
+    $html .= '
+    <div class="windowbg stat-card" style="grid-column: 1 / -1;">
+        <h3>👥 Team Performance</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; text-align: center;">';
+    
+    foreach ($teamHistory as $t) {
+        $team = $t['team'] ?? 'Unknown';
+        $matches = $t['matches_played'] ?? 0;
+        $wins = $t['matches_won'] ?? 0;
+        $kills = $t['kills'] ?? 0;
+        $deaths = $t['deaths'] ?? 0;
+        $kd = $deaths > 0 ? round($kills / $deaths, 2) : $kills;
+        $winRate = $matches > 0 ? round(($wins / $matches) * 100, 1) : 0;
+        
+        $teamColor = match(strtolower($team)) {
+            'allies' => '#4caf50',
+            'axis' => '#f44336',
+            default => '#ff9800'
+        };
+        $teamIcon = match(strtolower($team)) {
+            'allies' => '🟢',
+            'axis' => '🔴',
+            default => '🟡'
+        };
+        
+        $html .= '
+        <div style="padding: 20px; background: rgba(0,0,0,0.1); border-radius: 8px; border-top: 3px solid ' . $teamColor . ';">
+            <div style="font-size: 1.5em; margin-bottom: 5px;">' . $teamIcon . '</div>
+            <div style="font-size: 1.2em; font-weight: bold; color: ' . $teamColor . ';">' . htmlspecialchars(ucfirst($team)) . '</div>
+            <div style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85em;">
+                <div>
+                    <div style="opacity: 0.7;">Matches</div>
+                    <div style="font-weight: bold;">' . number_format($matches) . '</div>
+                </div>
+                <div>
+                    <div style="opacity: 0.7;">Win Rate</div>
+                    <div style="font-weight: bold; color: ' . ($winRate >= 50 ? '#4caf50' : '#f44336') . ';">' . $winRate . '%</div>
+                </div>
+                <div>
+                    <div style="opacity: 0.7;">Kills</div>
+                    <div style="font-weight: bold;">' . number_format($kills) . '</div>
+                </div>
+                <div>
+                    <div style="opacity: 0.7;">K/D</div>
+                    <div style="font-weight: bold;">' . number_format($kd, 2) . '</div>
+                </div>
+            </div>
+        </div>';
+    }
+    
+    $html .= '</div></div></div>';
+    return $html;
 }
 
 // =============================================================================
