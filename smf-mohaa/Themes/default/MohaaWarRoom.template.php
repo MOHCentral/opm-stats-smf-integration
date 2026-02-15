@@ -593,6 +593,87 @@ function template_mohaa_war_room()
             document.getElementById("drilldown-table").innerHTML = html;
         }
 
+        function renderSkillSpider(player) {
+            const spiderCtx = document.querySelector("#chart-skill-spider");
+            if (!spiderCtx) return;
+
+            try {
+                const toNum = (value) => {
+                    if (value === null || value === undefined) return 0;
+                    if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+                    const parsed = parseFloat(String(value).replace(/[^0-9.-]/g, ""));
+                    return Number.isFinite(parsed) ? parsed : 0;
+                };
+                const clamp100 = (value) => Math.max(0, Math.min(100, Number.isFinite(value) ? value : 0));
+
+                const kills = toNum(player.kills);
+                const deaths = toNum(player.deaths);
+                const headshots = toNum(player.headshots);
+                const accuracyRaw = toNum(player.accuracy);
+                const kdRaw = toNum(player.kd_ratio);
+
+                const playtimeSeconds = toNum(player.playtime_seconds) > 0
+                    ? toNum(player.playtime_seconds)
+                    : (toNum(player.playtime_hours) * 3600);
+                const playtimeHrs = Math.max(0.1, playtimeSeconds / 3600);
+
+                const damageDealt = toNum(player.damage_dealt) || toNum(player.damage) || toNum(player.total_damage);
+
+                const accuracy = clamp100(accuracyRaw * 2.5);
+                const lethality = clamp100((kills / playtimeHrs) * 5);
+                const survival = clamp100(kdRaw * 30);
+                const precision = kills > 0 ? clamp100((headshots / kills) * 200) : 0;
+                const aggression = deaths > 0 ? clamp100((damageDealt / deaths) / 5) : 0;
+
+                let radarData = [accuracy, lethality, survival, precision, aggression];
+
+                // Firefox + ApexCharts can render an effectively invisible radar on all-zero data.
+                // Force a minimal neutral baseline so users still see a profile shape.
+                const isAllZero = radarData.every((v) => v <= 0);
+                if (isAllZero) {
+                    radarData = [1, 1, 1, 1, 1];
+                }
+
+                if (typeof ApexCharts === "undefined") {
+                    spiderCtx.innerHTML = "<p class=\'centertext\' style=\'padding-top: 100px; opacity: 0.7;\'>Skill profile unavailable: chart library not loaded.</p>";
+                    return;
+                }
+
+                const options = {
+                    series: [{ name: "You", data: radarData }],
+                    chart: {
+                        type: "radar",
+                        height: 280,
+                        background: "transparent",
+                        toolbar: { show: false }
+                    },
+                    xaxis: {
+                        categories: ["Accuracy", "Lethality", "Survival", "Precision", "Aggression"],
+                        labels: {
+                            style: {
+                                colors: ["#4caf50", "#ff9800", "#2196f3", "#f44336", "#9c27b0"],
+                                fontSize: "11px",
+                                fontWeight: "bold"
+                            }
+                        }
+                    },
+                    stroke: { width: 2, colors: ["#4a6b8a"] },
+                    fill: { opacity: 0.3, colors: ["#4a6b8a"] },
+                    markers: { size: 4, colors: ["#fff"], strokeColors: "#4a6b8a", strokeWidth: 2 },
+                    theme: { mode: "dark" },
+                    yaxis: { max: 100, tickAmount: 4, labels: { style: { colors: "#888" } } },
+                    tooltip: { theme: "dark", y: { formatter: (val) => Math.round(val) + "%" } }
+                };
+
+                spiderCtx.innerHTML = "";
+                const spiderChart = new ApexCharts(spiderCtx, options);
+                spiderChart.render();
+            } catch (e) {
+                console.error("Skill profile chart render failed:", e);
+                spiderCtx.innerHTML = "<p class=\'centertext\' style=\'padding-top: 100px; opacity: 0.7;\'>Unable to render skill profile chart.</p>";
+            }
+        }
+
         let heatmapInstance = null;
         let activeHeatmapMap = "";
 
@@ -645,6 +726,12 @@ function template_mohaa_war_room()
         }
 
         function initWarRoomCharts() {
+            const data = window.mohaaData || {};
+            const player = data.player_stats || {};
+
+            // Always attempt to render Skill Profile first, even if other charts fail.
+            renderSkillSpider(player);
+
             // Register heatmap triggers
             document.querySelectorAll(".heatmap-trigger").forEach(btn => {
                 btn.addEventListener("click", (e) => {
@@ -671,12 +758,10 @@ function template_mohaa_war_room()
                 });
             });
 
-            const data = window.mohaaData || {};
             if (!data) {
                 console.warn("No mohaaData available");
                 return;
             }
-            const player = data.player_stats || {};
             const perf = player.performance || []; // Expecting array of {kd: float, played_at: timestamp}
             
             // 1. Performance Trend (Area Chart)
@@ -721,16 +806,40 @@ function template_mohaa_war_room()
             // 2. Weapon Distribution (Donut)
             const weapCtx = document.querySelector("#chart-weapons");
             const weapons = player.weapons || {}; // Object: name -> stats
-            // Convert object to array for sorting
-            const weaponArr = Array.isArray(weapons) ? weapons : Object.entries(weapons)
-                .map(([k, v]) => ({name: k, kills: v.kills}))
-                .filter(w => w.kills > 0)
+            const toNum = (value) => {
+                if (value === null || value === undefined) return 0;
+                if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+                const parsed = parseFloat(String(value).replace(/[^0-9.-]/g, ""));
+                return Number.isFinite(parsed) ? parsed : 0;
+            };
+
+            // Normalize both API formats:
+            // 1) object map: { "kar98": {kills: 10}, ... }
+            // 2) array rows: [{weapon: "kar98", kills: "10"}, ...]
+            let weaponArr = [];
+            if (Array.isArray(weapons)) {
+                weaponArr = weapons.map((w) => ({
+                    name: String(w?.name ?? w?.weapon ?? w?.actor_weapon ?? "Unknown"),
+                    kills: toNum(w?.kills ?? w?.total_kills ?? w?.value ?? 0)
+                }));
+            } else {
+                weaponArr = Object.entries(weapons).map(([k, v]) => ({
+                    name: String(k),
+                    kills: toNum(v?.kills ?? v?.total_kills ?? v?.value ?? 0)
+                }));
+            }
+
+            const invalidWeaponNames = new Set(["world", "player", "explosion", "projectile", "bullet", "unknown", "none", ""]);
+
+            weaponArr = weaponArr
+                .filter((w) => !invalidWeaponNames.has(String(w.name || "").trim().toLowerCase()))
+                .filter((w) => w.kills > 0)
                 .sort((a, b) => b.kills - a.kills)
                 .slice(0, 8); // Top 8
                 
             if (weapCtx && weaponArr.length > 0) {
                 const options = {
-                    series: weaponArr.map(w => parseInt(w.kills)),
+                    series: weaponArr.map(w => Math.round(w.kills)),
                     labels: weaponArr.map(w => w.name),
                     chart: { type: "donut", height: 300, background: "transparent" },
                     plotOptions: { 
@@ -739,10 +848,12 @@ function template_mohaa_war_room()
                                 size: "70%",
                                 labels: {
                                     show: true,
+                                    name: { color: "#444" },
+                                    value: { color: "#222" },
                                     total: {
                                         show: true,
                                         label: "Total Kills",
-                                        color: "#fff",
+                                        color: "#444",
                                         formatter: function (w) {
                                             return w.globals.seriesTotals.reduce((a, b) => a + b, 0)
                                         }
@@ -752,8 +863,11 @@ function template_mohaa_war_room()
                         } 
                     },
                     stroke: { show: false },
-                    theme: { mode: "dark", palette: "palette2" }, // Using palette2 for variety
-                    legend: { position: "bottom", labels: { colors: "#fff" } },
+                    theme: { mode: "light", palette: "palette2" },
+                    legend: {
+                        position: "bottom",
+                        labels: { colors: "#333", useSeriesColors: false }
+                    },
                     dataLabels: { enabled: false }
                 };
                 new ApexCharts(weapCtx, options).render();
@@ -803,55 +917,6 @@ function template_mohaa_war_room()
                  mapCtx.innerHTML = "<p class=\'centertext\' style=\'padding-top: 100px; opacity: 0.6;\'>Not enough map data yet.</p>";
             }
             
-            // 4. Skill Spider (Radar) - uses actual API fields
-            const spiderCtx = document.querySelector("#chart-skill-spider");
-            if (spiderCtx) {
-                const kills = player.kills || 0;
-                const deaths = player.deaths || 0;
-                const headshots = player.headshots || 0;
-                const playtimeHrs = (player.playtime_seconds || 0) / 3600;
-
-                // Accuracy: 40% = perfect score
-                const accuracy = Math.min(100, (player.accuracy || 0) * 2.5);
-                // Lethality: kills per hour, 20 kph = 100
-                const lethality = Math.min(100, (kills / Math.max(0.1, playtimeHrs)) * 5);
-                // Survival: KD ratio, 3.0 = 90
-                const survival = Math.min(100, (player.kd_ratio || 0) * 30);
-                // Precision: headshot %, 50% = 100
-                const precision = kills > 0 ? Math.min(100, (headshots / kills) * 200) : 0;
-                // Aggression: damage dealt per death, 500 = 100
-                const aggression = deaths > 0 ? Math.min(100, ((player.damage_dealt || 0) / deaths) / 5) : 0;
-
-                const options = {
-                    series: [{
-                        name: "You",
-                        data: [accuracy, lethality, survival, precision, aggression]
-                    }],
-                    chart: {
-                        type: "radar",
-                        height: 280,
-                        background: "transparent",
-                        toolbar: { show: false }
-                    },
-                    xaxis: {
-                        categories: ["Accuracy", "Lethality", "Survival", "Precision", "Aggression"],
-                        labels: {
-                            style: {
-                                colors: ["#4caf50", "#ff9800", "#2196f3", "#f44336", "#9c27b0"],
-                                fontSize: "11px",
-                                fontWeight: "bold"
-                            }
-                        }
-                    },
-                    stroke: { width: 2, colors: ["#4a6b8a"] },
-                    fill: { opacity: 0.3, colors: ["#4a6b8a"] },
-                    markers: { size: 4, colors: ["#fff"], strokeColors: "#4a6b8a", strokeWidth: 2 },
-                    theme: { mode: "dark" },
-                    yaxis: { max: 100, tickAmount: 4, labels: { style: { colors: "#888" } } },
-                    tooltip: { theme: "dark", y: { formatter: (val) => Math.round(val) + "%" } }
-                };
-                new ApexCharts(spiderCtx, options).render();
-            }
         }
         
         function showTab(tabName) {
@@ -1022,7 +1087,7 @@ function template_mohaa_war_room()
             
             html += "<div class=\"windowbg stat-card\">";
             html += "<h3>🎯 Signature Metrics</h3>";
-            html += renderProgressBar("Clutch Rate", signature.clutch_rate || 0, "#f44336");
+            html += renderProgressBar("Win Impact", signature.clutch_rate || 0, "#f44336");
             html += renderProgressBar("First Blood Rate", signature.first_blood_rate || 0, "#ff5722");
             html += "</div>";
             
@@ -1627,10 +1692,22 @@ function template_war_room_grenade_content($player) {
 
 function template_war_room_weapons_content($weapons) {
     if (empty($weapons)) return '<p style="padding: 20px; text-align: center; opacity: 0.6;">No weapon data recorded yet.</p>';
+
+    $invalidWeapons = ['world', 'player', 'explosion', 'projectile', 'bullet', 'unknown', 'none', ''];
     
     $html = '<div class="weapon-list-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;">';
+    $rendered = 0;
     foreach ($weapons as $name => $stats) {
-        $icon = template_war_room_weapon_icon($name);
+        // Support both formats:
+        // 1) associative: ["Kar98k" => {kills:...}]
+        // 2) indexed: [{weapon:"Kar98k", kills:...}, ...]
+        $weaponName = is_string($name) ? $name : ($stats['weapon'] ?? $stats['name'] ?? 'unknown');
+        $weaponName = (string) $weaponName;
+        if (in_array(strtolower(trim($weaponName)), $invalidWeapons, true)) {
+            continue;
+        }
+
+        $icon = template_war_room_weapon_icon($weaponName);
         $kills = $stats['kills'] ?? 0;
         $acc = $stats['accuracy'] ?? 0;
         $headshots = $stats['headshots'] ?? 0;
@@ -1653,7 +1730,7 @@ function template_war_room_weapons_content($weapons) {
                 <div style="font-size: 2em; margin-right: 15px;">'.$icon.'</div>
                 <div style="flex: 1;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-weight: bold; font-size: 1.1em;">'.htmlspecialchars($name).'</span>
+                        <span style="font-weight: bold; font-size: 1.1em;">'.htmlspecialchars($weaponName).'</span>
                         <span style="font-size: 0.8em; padding: 2px 8px; border-radius: 10px; background: '.$color.'22; color: '.$color.'; border: 1px solid '.$color.'44;">'.$badge.' '.$rank.'</span>
                     </div>
                     <div style="height: 4px; background: rgba(0,0,0,0.2); margin-top: 5px; border-radius: 2px; overflow: hidden;">
@@ -1687,6 +1764,10 @@ function template_war_room_weapons_content($weapons) {
                 </div>' : '').'
             </div>
         </div>';
+        $rendered++;
+    }
+    if ($rendered === 0) {
+        return '<p style="padding: 20px; text-align: center; opacity: 0.6;">No weapon data recorded yet.</p>';
     }
     $html .= '</div>';
     return $html;
@@ -2284,7 +2365,7 @@ function template_war_room_signature_metrics_content($data) {
     
     return '
     <div style="padding: 10px;">
-        '.template_war_room_progress_bar('Clutch Rate', $clutch, '#f44336', '% of 1vX situations won').'
+        '.template_war_room_progress_bar('Win Impact', $clutch, '#f44336', '% of matches won while active').'
         '.template_war_room_progress_bar('First Blood Rate', $firstBlood, '#ff5722', '% of rounds with first kill').'
         '.template_war_room_progress_bar('Multi-Kill Rate', $multiKill, '#e91e63', '% of kills in multi-kills').'
         '.template_war_room_progress_bar('Revenge Rate', $revenge, '#673ab7', '% of deaths avenged').'

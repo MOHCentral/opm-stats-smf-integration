@@ -530,45 +530,80 @@ function template_mohaa_war_room()
                  mapCtx.innerHTML = "<p class=\'centertext\' style=\'padding-top: 100px; opacity: 0.6;\'>Not enough map data yet.</p>";
             }
             
-            // 4. Skill Spider (Radar) - NEW
+            // 4. Skill Spider (Radar) - resilient rendering with safe numeric coercion
             const spiderCtx = document.querySelector("#chart-skill-spider");
             if (spiderCtx) {
-                // Calculate skill values from player stats (0-100 scale)
-                const accuracy = Math.min(100, (player.accuracy || 0) * 2.5); // 40% acc = 100 score
-                const aggression = Math.min(100, ((player.kills || 0) / Math.max(1, player.playtime_hours || 1)) * 10); // Kills per hour
-                const survival = Math.min(100, (player.kd_ratio || 1) * 30); // 3.0 KD = 90
-                const movement = Math.min(100, ((player.distance_km || 0) / Math.max(1, player.playtime_hours || 1)) * 5); // KM per hour
-                const clutch = Math.min(100, ((player.clutch_wins || 0) / Math.max(1, (player.clutch_total || 1))) * 100); // Clutch win %
-                
-                const options = {
-                    series: [{
-                        name: "You",
-                        data: [accuracy, aggression, survival, movement, clutch]
-                    }],
-                    chart: { 
-                        type: "radar", 
-                        height: 280, 
-                        background: "transparent", 
-                        toolbar: { show: false }
-                    },
-                    xaxis: { 
-                        categories: ["Accuracy", "Aggression", "Survival", "Movement", "Clutch"],
-                        labels: { 
-                            style: { 
-                                colors: ["#4caf50", "#ff9800", "#2196f3", "#9c27b0", "#f44336"],
-                                fontSize: "12px",
-                                fontWeight: "bold"
-                            } 
-                        }
-                    },
-                    stroke: { width: 2, colors: ["#4a6b8a"] },
-                    fill: { opacity: 0.3, colors: ["#4a6b8a"] },
-                    markers: { size: 4, colors: ["#fff"], strokeColors: "#4a6b8a", strokeWidth: 2 },
-                    theme: { mode: "dark" },
-                    yaxis: { max: 100, tickAmount: 4, labels: { style: { colors: "#888" } } },
-                    tooltip: { theme: "dark", y: { formatter: (val) => Math.round(val) + "%" } }
+                const toNum = (value) => {
+                    if (value === null || value === undefined) return 0;
+                    if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+                    const parsed = parseFloat(String(value).replace(/[^0-9.-]/g, ""));
+                    return Number.isFinite(parsed) ? parsed : 0;
                 };
-                new ApexCharts(spiderCtx, options).render();
+                const clamp100 = (value) => Math.max(0, Math.min(100, Number.isFinite(value) ? value : 0));
+
+                const kills = toNum(player.kills);
+                const deaths = toNum(player.deaths);
+                const headshots = toNum(player.headshots);
+                const accuracyRaw = toNum(player.accuracy);
+                const kdRaw = toNum(player.kd_ratio);
+
+                const playtimeSeconds = toNum(player.playtime_seconds) > 0
+                    ? toNum(player.playtime_seconds)
+                    : (toNum(player.playtime_hours) * 3600);
+                const playtimeHrs = Math.max(0.1, playtimeSeconds / 3600);
+
+                const damageDealt = toNum(player.damage_dealt) || toNum(player.damage) || toNum(player.total_damage);
+
+                const accuracy = clamp100(accuracyRaw * 2.5); // 40% -> 100
+                const lethality = clamp100((kills / playtimeHrs) * 5); // 20 kills/hr -> 100
+                const survival = clamp100(kdRaw * 30); // 3.0 KD -> 90
+                const precision = kills > 0 ? clamp100((headshots / kills) * 200) : 0; // 50% -> 100
+                const aggression = deaths > 0 ? clamp100((damageDealt / deaths) / 5) : 0; // 500 dmg/death -> 100
+
+                const radarData = [accuracy, lethality, survival, precision, aggression];
+                const hasSignal = radarData.some((v) => v > 0);
+
+                if (typeof ApexCharts === "undefined") {
+                    spiderCtx.innerHTML = "<p class=\'centertext\' style=\'padding-top: 100px; opacity: 0.7;\'>Chart library not loaded.</p>";
+                } else if (!hasSignal) {
+                    spiderCtx.innerHTML = "<p class=\'centertext\' style=\'padding-top: 100px; opacity: 0.7;\'>No combat data yet. Play a few matches to generate your skill profile.</p>";
+                } else {
+                    const options = {
+                        series: [{
+                            name: "You",
+                            data: radarData
+                        }],
+                        chart: {
+                            type: "radar",
+                            height: 280,
+                            background: "transparent",
+                            toolbar: { show: false }
+                        },
+                        xaxis: {
+                            categories: ["Accuracy", "Lethality", "Survival", "Precision", "Aggression"],
+                            labels: {
+                                style: {
+                                    colors: ["#4caf50", "#ff9800", "#2196f3", "#f44336", "#9c27b0"],
+                                    fontSize: "11px",
+                                    fontWeight: "bold"
+                                }
+                            }
+                        },
+                        stroke: { width: 2, colors: ["#4a6b8a"] },
+                        fill: { opacity: 0.3, colors: ["#4a6b8a"] },
+                        markers: { size: 4, colors: ["#fff"], strokeColors: "#4a6b8a", strokeWidth: 2 },
+                        theme: { mode: "dark" },
+                        yaxis: { max: 100, tickAmount: 4, labels: { style: { colors: "#888" } } },
+                        tooltip: { theme: "dark", y: { formatter: (val) => Math.round(val) + "%" } }
+                    };
+
+                    try {
+                        new ApexCharts(spiderCtx, options).render();
+                    } catch (e) {
+                        console.error("Skill profile chart render failed:", e);
+                        spiderCtx.innerHTML = "<p class=\'centertext\' style=\'padding-top: 100px; opacity: 0.7;\'>Unable to render skill profile.</p>";
+                    }
+                }
             }
         }
         
