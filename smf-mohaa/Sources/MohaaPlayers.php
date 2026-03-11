@@ -476,10 +476,10 @@ function MohaaPlayers_Dashboard(): void
         // Map API response keys to template-expected keys
         if (!empty($playerStats)) {
             // Transform total_* keys to match template expectations
-            $playerStats['kills'] = $playerStats['total_kills'] ?? 0;
-            $playerStats['deaths'] = $playerStats['total_deaths'] ?? 0;
-            $playerStats['damage'] = $playerStats['total_damage'] ?? 0;
-            $playerStats['headshots'] = $playerStats['total_headshots'] ?? 0;
+            $playerStats['kills'] = $playerStats['total_kills'] ?? $playerStats['kills'] ?? 0;
+            $playerStats['deaths'] = $playerStats['total_deaths'] ?? $playerStats['deaths'] ?? 0;
+            $playerStats['damage'] = $playerStats['total_damage'] ?? $playerStats['damage'] ?? $playerStats['damage_dealt'] ?? 0;
+            $playerStats['headshots'] = $playerStats['total_headshots'] ?? $playerStats['headshots'] ?? 0;
             // matches_played and matches_won already match
         }
         
@@ -771,22 +771,29 @@ function MohaaPlayers_ProfileIdentity(int $memID): void
 function MohaaPlayers_GetLinkedGUID(int $memberId): ?string
 {
     global $smcFunc;
+
+    $memberGuid = (string) $memberId;
     
     $request = $smcFunc['db_query']('', '
         SELECT player_guid
         FROM {db_prefix}mohaa_identities
         WHERE id_member = {int:member}
-        ORDER BY linked_at DESC
+        ORDER BY CASE WHEN player_guid = {string:member_guid} THEN 0 ELSE 1 END, linked_at DESC
         LIMIT 1',
         [
             'member' => $memberId,
+            'member_guid' => $memberGuid,
         ]
     );
     
     $row = $smcFunc['db_fetch_assoc']($request);
     $smcFunc['db_free_result']($request);
-    
-    return $row ? $row['player_guid'] : null;
+
+    if ($row && !empty($row['player_guid'])) {
+        return $row['player_guid'];
+    }
+
+    return $memberGuid;
 }
 
 /**
@@ -922,7 +929,7 @@ function MohaaPlayers_Leaderboard(): void
         // Weapons
         'reloads', 'weapon_swaps', 'no_ammo', 'looter',
         // Movement
-        'distance', 'sprinted', 'swam', 'driven', 'jumps', 'crouch_time', 'prone_time', 'ladders',
+        'distance', 'sprinted', 'jumps', 'crouch_time', 'ladders',
         // Survival
         'health_picked', 'ammo_picked', 'armor_picked', 'items_picked',
         // Results
@@ -986,11 +993,8 @@ function MohaaPlayers_Leaderboard(): void
             // Movement
             'distance' => ['icon' => '🏃', 'title' => 'Marathon Man', 'group' => 'Movement'],
             'sprinted' => ['icon' => '⚡', 'title' => 'Sprinter', 'group' => 'Movement'],
-            'swam' => ['icon' => '🏊', 'title' => 'Swimmer', 'group' => 'Movement'],
-            'driven' => ['icon' => '🚙', 'title' => 'Driver', 'group' => 'Movement'],
             'jumps' => ['icon' => '🐇', 'title' => 'Bunny Hopper', 'group' => 'Movement'],
             'crouch_time' => ['icon' => '🦵', 'title' => 'Tactical Crouch', 'group' => 'Movement'],
-            'prone_time' => ['icon' => '⛺', 'title' => 'Camper', 'group' => 'Movement'],
             'ladders' => ['icon' => '🧗', 'title' => 'Mountaineer', 'group' => 'Movement'],
             
             // Survival / Pickups

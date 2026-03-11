@@ -265,15 +265,14 @@ function template_mohaa_player_full()
             var stanceOptions = {
                 series: [
                     '.($deep['movement']['time_standing'] ?? 0).',
-                    '.($deep['movement']['time_crouching'] ?? 0).',
-                    '.($deep['movement']['time_prone'] ?? 0).'
+                    '.($deep['movement']['time_crouching'] ?? 0).'
                 ],
                 chart: {
                     type: "pie",
                     height: 300,
                     foreColor: "'.$color_text.'"
                 },
-                labels: ["Standing", "Crouching", "Prone"],
+                labels: ["Standing", "Crouching"],
                 colors: ["#2196F3", "#FF9800", "#4CAF50"],
                 legend: {
                     position: "bottom"
@@ -301,7 +300,6 @@ function template_mohaa_player_full()
                     data: [
                         '.($deep['movement']['jump_count'] ?? 0).',
                         '.($deep['movement']['crouch_count'] ?? 0).',
-                        '.($deep['movement']['prone_count'] ?? 0).',
                         '.($deep['movement']['sprint_count'] ?? 0).',
                         '.($deep['movement']['ladder_count'] ?? 0).'
                     ]
@@ -312,7 +310,7 @@ function template_mohaa_player_full()
                     foreColor: "'.$color_text.'"
                 },
                 xaxis: {
-                    categories: ["Jumps", "Crouch", "Prone", "Sprints", "Ladders"]
+                    categories: ["Jumps", "Crouch", "Sprints", "Ladders"]
                 },
                 yaxis: {
                     show: true

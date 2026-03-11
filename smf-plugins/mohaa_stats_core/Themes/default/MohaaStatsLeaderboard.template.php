@@ -466,11 +466,8 @@ function template_mohaa_stats_dashboard()
         // C. Movement
         'distance' => ['label' => 'Marathon Man', 'icon' => '???'],
         'sprinted' => ['label' => 'Sprinter', 'icon' => '???'],
-        'swam' => ['label' => 'Swimmer', 'icon' => '???'],
-        'driven' => ['label' => 'Driver', 'icon' => '??'],
         'jumps' => ['label' => 'Bunny Hopper', 'icon' => '??'],
         'crouch_time' => ['label' => 'Tactical Crouch', 'icon' => '??'],
-        'prone_time' => ['label' => 'Camper', 'icon' => '???'],
         'ladders' => ['label' => 'Mountaineer', 'icon' => '??'],
 
         // D. Survival

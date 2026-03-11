@@ -664,20 +664,17 @@ function template_playstyle_spectrum($players)
     $playerNames = [];
     $standingTime = [];
     $crouchingTime = [];
-    $proneTime = [];
     
     foreach (array_slice($players, 0, 10) as $player) {
         $playerNames[] = $player['player_name'];
-        $total = $player['time_standing_seconds'] + $player['time_crouching_seconds'] + $player['time_prone_seconds'];
+        $total = $player['time_standing_seconds'] + $player['time_crouching_seconds'];
         
         if ($total > 0) {
             $standingTime[] = round(($player['time_standing_seconds'] / $total) * 100, 1);
             $crouchingTime[] = round(($player['time_crouching_seconds'] / $total) * 100, 1);
-            $proneTime[] = round(($player['time_prone_seconds'] / $total) * 100, 1);
         } else {
             $standingTime[] = 0;
             $crouchingTime[] = 0;
-            $proneTime[] = 0;
         }
     }
     
@@ -708,9 +705,6 @@ function template_playstyle_spectrum($players)
             }, {
                 name: "Crouching",
                 data: ', json_encode($crouchingTime), '
-            }, {
-                name: "Prone",
-                data: ', json_encode($proneTime), '
             }],
             chart: {
                 type: "bar",

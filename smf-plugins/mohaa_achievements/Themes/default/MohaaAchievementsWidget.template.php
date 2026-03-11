@@ -182,7 +182,7 @@ function template_achievement_badge_icon($icon)
         'backstab' => '🗡️', 'backstab2' => '🗡️',
         'airshot' => '✈️', 'airjordan' => '🏀',
         'denied' => '🚫', 'camper' => '⛺',
-        'prone' => '🐍', 'snake' => '🐍',
+        'snake' => '🐍',
         'jump' => '🐰', 'rabbit' => '🐇',
         'blind' => '😎', 'lowHP' => '❤️‍🩹',
         
@@ -226,7 +226,7 @@ function template_achievement_badge_icon($icon)
         
         // Movement
         'statue' => '🗿', 'crouch' => '🐅', 'bunny' => '🐰',
-        'slide' => '🛝', 'prone' => '🐍', 'vertical' => '📈',
+        'slide' => '🛝', 'vertical' => '📈',
         
         // Objectives
         'ninja' => '🥷', 'buzzer' => '⏰', 'postal' => '📬',

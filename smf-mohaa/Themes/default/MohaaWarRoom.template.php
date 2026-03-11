@@ -1790,37 +1790,20 @@ function template_war_room_movement_content($player) {
 }
 
 function template_war_room_stance_content($player) {
-    // 1. Get raw counts (support both naming conventions just in case)
-    $stand = $player['kills_while_standing'] ?? $player['standing_kills'] ?? 0;
-    $crouch = $player['kills_while_crouching'] ?? $player['crouching_kills'] ?? 0;
-    $prone = $player['kills_while_prone'] ?? $player['prone_kills'] ?? 0;
-    
-    // 2. Calculate Total
-    $total = $stand + $crouch + $prone;
-    if ($total == 0) $total = 1; // Avoid div by zero
-    
-    // 3. Calculate Percentages
-    $standPct = round(($stand / $total) * 100, 1);
+    $crouch = (int) ($player['crouch_time'] ?? $player['crouches'] ?? 0);
+    $ladders = (int) ($player['ladders'] ?? 0);
+
+    $total = $crouch + $ladders;
+    if ($total == 0) { $total = 1; }
+
     $crouchPct = round(($crouch / $total) * 100, 1);
-    $pronePct = round(($prone / $total) * 100, 1);
-    
+    $ladderPct = round(($ladders / $total) * 100, 1);
+
     return '
     <div style="padding: 10px;">
-        <div style="margin-bottom: 12px; cursor: pointer;" class="drilldown-stat" data-stat="kills_while_standing" data-dimension="map" title="Click for details">
+        <div style="margin-bottom: 12px; cursor: pointer;" class="drilldown-stat" data-stat="crouch_time" data-dimension="map" title="Click for details">
             <div style="display: flex; justify-content: space-between; font-size: 0.9em; margin-bottom: 4px;">
-                <span>Standing</span>
-                <div>
-                    <strong>'.number_format($stand).'</strong>
-                    <span style="font-size: 0.8em; opacity: 0.7; margin-left: 5px;">('.$standPct.'%)</span>
-                </div>
-            </div>
-            <div style="height: 8px; background: rgba(0,0,0,0.1); border-radius: 4px;">
-                <div style="width: '.$standPct.'%; height: 100%; background: #2196f3; border-radius: 4px;"></div>
-            </div>
-        </div>
-         <div style="margin-bottom: 12px; cursor: pointer;" class="drilldown-stat" data-stat="kills_while_crouching" data-dimension="map" title="Click for details">
-            <div style="display: flex; justify-content: space-between; font-size: 0.9em; margin-bottom: 4px;">
-                <span>Crouching</span>
+                <span>Crouch Events</span>
                 <div>
                     <strong>'.number_format($crouch).'</strong>
                     <span style="font-size: 0.8em; opacity: 0.7; margin-left: 5px;">('.$crouchPct.'%)</span>
@@ -1830,16 +1813,16 @@ function template_war_room_stance_content($player) {
                 <div style="width: '.$crouchPct.'%; height: 100%; background: #4caf50; border-radius: 4px;"></div>
             </div>
         </div>
-         <div style="cursor: pointer;" class="drilldown-stat" data-stat="kills_while_prone" data-dimension="map" title="Click for details">
+         <div style="cursor: pointer;" class="drilldown-stat" data-stat="ladders" data-dimension="map" title="Click for details">
             <div style="display: flex; justify-content: space-between; font-size: 0.9em; margin-bottom: 4px;">
-                <span>Prone</span>
+                <span>Ladder Mounts</span>
                 <div>
-                    <strong>'.number_format($prone).'</strong>
-                    <span style="font-size: 0.8em; opacity: 0.7; margin-left: 5px;">('.$pronePct.'%)</span>
+                    <strong>'.number_format($ladders).'</strong>
+                    <span style="font-size: 0.8em; opacity: 0.7; margin-left: 5px;">('.$ladderPct.'%)</span>
                 </div>
             </div>
             <div style="height: 8px; background: rgba(0,0,0,0.1); border-radius: 4px;">
-                <div style="width: '.$pronePct.'%; height: 100%; background: #ff9800; border-radius: 4px;"></div>
+                <div style="width: '.$ladderPct.'%; height: 100%; background: #2196f3; border-radius: 4px;"></div>
             </div>
         </div>
     </div>';
@@ -2100,14 +2083,13 @@ function template_war_room_weapon_icon(string $weapon): string
  */
 function template_war_room_distance_content($player): string
 {
-    $walked = ($player['distance_walked'] ?? 0) / 1000;
+    $walkedRaw = $player['distance_walked'] ?? $player['distance_traveled'] ?? (($player['total_distance_km'] ?? 0) * 1000);
+    $walked = $walkedRaw / 1000;
     $sprinted = ($player['distance_sprinted'] ?? 0) / 1000;
-    $swam = ($player['distance_swam'] ?? 0) / 1000;
-    $driven = ($player['distance_driven'] ?? 0) / 1000;
-    $total = $walked + $sprinted + $swam + $driven;
+    $total = $walked + $sprinted;
     
     return '
-    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0;">
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin: 20px 0;">
         <div style="text-align: center; padding: 20px; background: rgba(33, 150, 243, 0.1); border-radius: 8px;">
             <div style="font-size: 2em; font-weight: bold; color: #2196f3;">'.number_format($walked, 1).'</div>
             <div style="opacity: 0.7;">km Walked</div>
@@ -2115,14 +2097,6 @@ function template_war_room_distance_content($player): string
         <div style="text-align: center; padding: 20px; background: rgba(255, 152, 0, 0.1); border-radius: 8px;">
             <div style="font-size: 2em; font-weight: bold; color: #ff9800;">'.number_format($sprinted, 1).'</div>
             <div style="opacity: 0.7;">km Sprinted</div>
-        </div>
-        <div style="text-align: center; padding: 20px; background: rgba(0, 188, 212, 0.1); border-radius: 8px;">
-            <div style="font-size: 2em; font-weight: bold; color: #00bcd4;">'.number_format($swam, 1).'</div>
-            <div style="opacity: 0.7;">km Swam</div>
-        </div>
-        <div style="text-align: center; padding: 20px; background: rgba(156, 39, 176, 0.1); border-radius: 8px;">
-            <div style="font-size: 2em; font-weight: bold; color: #9c27b0;">'.number_format($driven, 1).'</div>
-            <div style="opacity: 0.7;">km Driven</div>
         </div>
     </div>
     <div style="text-align: center; font-size: 1.5em; font-weight: bold;">Total: '.number_format($total, 1).' km</div>';
@@ -2133,7 +2107,7 @@ function template_war_room_distance_content($player): string
  */
 function template_war_room_jumps_content($player): string
 {
-    $jumps = $player['jumps'] ?? 0;
+    $jumps = $player['jumps'] ?? $player['jump_count'] ?? 0;
     $matches = max(1, $player['matches_played'] ?? 1);
     $badge = $jumps > 1000 ? '<div style="margin-top: 15px; padding: 10px; background: rgba(76, 175, 80, 0.2); border-radius: 8px; font-weight: bold;">🐰 Bunny Hopper!</div>' : '';
     

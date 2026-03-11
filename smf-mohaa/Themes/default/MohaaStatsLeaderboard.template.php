@@ -317,11 +317,8 @@ function template_mohaa_stats_leaderboard()
         'looter' => ['title' => 'Looter', 'desc' => 'Weapons picked up from the ground.', 'icon' => '🎒'],
         'distance' => ['title' => 'Marathon Man', 'desc' => 'Total distance travelled on foot.', 'icon' => '🏃'],
         'sprinted' => ['title' => 'Sprinter', 'desc' => 'Distance covered while sprinting.', 'icon' => '⚡'],
-        'swam' => ['title' => 'Swimmer', 'desc' => 'Distance covered in water.', 'icon' => '🏊'],
-        'driven' => ['title' => 'Driver', 'desc' => 'Distance covered in vehicles.', 'icon' => '🚙'],
         'jumps' => ['title' => 'Bunny Hopper', 'desc' => 'Total number of jumps performed.', 'icon' => '🐇'],
         'crouch_time' => ['title' => 'Tactical Crouch', 'desc' => 'Time spent moving in a crouched position.', 'icon' => '🦵'],
-        'prone_time' => ['title' => 'Camper', 'desc' => 'Time spent laying on the ground.', 'icon' => '⛺'],
         'ladders' => ['title' => 'Mountaineer', 'desc' => 'Time spent climbing ladders.', 'icon' => '🧗'],
         'health_picked' => ['title' => 'Glutton', 'desc' => 'Health packs consumed.', 'icon' => '🍗'],
         'ammo_picked' => ['title' => 'Hoarder', 'desc' => 'Ammo crates collected.', 'icon' => '📦'],
@@ -1540,11 +1537,8 @@ function template_mohaa_stats_dashboard()
         // C. Movement
         'distance' => ['label' => 'Marathon Man', 'icon' => '🏃'],
         'sprinted' => ['label' => 'Sprinter', 'icon' => '⚡'],
-        'swam' => ['label' => 'Swimmer', 'icon' => '🏊'],
-        'driven' => ['label' => 'Driver', 'icon' => '🚙'],
         'jumps' => ['label' => 'Bunny Hopper', 'icon' => '🐇'],
         'crouch_time' => ['label' => 'Tactical Crouch', 'icon' => '🦵'],
-        'prone_time' => ['label' => 'Camper', 'icon' => '⛺'],
         'ladders' => ['label' => 'Mountaineer', 'icon' => '🧗'],
 
         // D. Survival

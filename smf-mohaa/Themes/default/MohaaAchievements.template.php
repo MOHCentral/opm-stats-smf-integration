@@ -273,7 +273,6 @@ function template_achievement_icon($icon)
         'airshot' => '✈️',
         'denied' => '🚫',
         'camper' => '⛺',
-        'prone' => '🐍',
         'jump' => '🐰',
         'blind' => '😎',
         'lowHP' => '❤️‍🩹',
