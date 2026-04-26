@@ -62,7 +62,7 @@ function MohaaStats_AutoInstall(): void
     $settings = [
         'mohaa_stats_installed' => 1,
         'mohaa_stats_enabled' => 1,
-        'mohaa_stats_api_url' => 'http://77.42.64.214:8084/api/v1',
+        'mohaa_stats_api_url' => 'http://localhost:8084',
     ];
     
     updateSettings($settings);

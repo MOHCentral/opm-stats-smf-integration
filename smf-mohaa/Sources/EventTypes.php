@@ -5,7 +5,7 @@ declare(strict_types=1);
  * Event Type Constants
  * 
  * GENERATED FILE - DO NOT EDIT DIRECTLY
- * Generated at: 2026-02-05T10:35:52.149792
+ * Generated at: 2026-04-14T17:34:10.657835
  * Source: opm-stats-api/web/static/openapi.yaml
  * 
  * To add new event types, edit openapi.yaml and run `make generate-types`
@@ -54,7 +54,6 @@ class EventTypes
     public const JUMP = 'jump';
     public const LAND = 'land';
     public const CROUCH = 'crouch';
-    public const PRONE = 'prone';
     public const PLAYER_STAND = 'player_stand';
     public const PLAYER_SPAWN = 'player_spawn';
     public const PLAYER_RESPAWN = 'player_respawn';
@@ -74,12 +73,6 @@ class EventTypes
     public const HEALTH_PICKUP = 'health_pickup';
     public const AMMO_PICKUP = 'ammo_pickup';
     public const ARMOR_PICKUP = 'armor_pickup';
-    public const VEHICLE_ENTER = 'vehicle_enter';
-    public const VEHICLE_EXIT = 'vehicle_exit';
-    public const VEHICLE_CRASH = 'vehicle_crash';
-    public const VEHICLE_CHANGE = 'vehicle_change';
-    public const TURRET_ENTER = 'turret_enter';
-    public const TURRET_EXIT = 'turret_exit';
     public const SERVER_CONSOLE_COMMAND = 'server_console_command';
     public const HEARTBEAT = 'heartbeat';
     public const MAP_INIT = 'map_init';

@@ -58,13 +58,6 @@ $extended_achievements = [
     ['streamer', 'Streamer', 'Stream the game for 10 hours total', 'dedication', 4, 'streamer', 'stream_time', 36000, 200],
     ['content_creator', 'Content Creator', 'Create content viewed by 1000+ players', 'dedication', 5, 'content', 'content_views', 1000, 300],
     
-    // ==================== VEHICLE BADGES ====================
-    ['tank_commander', 'Tank Commander', 'Get 50 kills in a tank', 'weapon', 4, 'tank', 'tank_kills', 50, 175],
-    ['tank_ace', 'Tank Ace', 'Get 200 kills in a tank', 'weapon', 5, 'tankace', 'tank_kills', 200, 300],
-    ['jeep_warrior', 'Jeep Warrior', 'Get 25 roadkills with a jeep', 'weapon', 4, 'jeep', 'roadkills', 25, 150],
-    ['tank_destroyer', 'Tank Destroyer', 'Destroy 25 enemy tanks', 'objective', 4, 'tankdestroyer', 'tanks_destroyed', 25, 175],
-    ['air_support', 'Air Support', 'Get 10 kills with mounted MG on vehicle', 'weapon', 3, 'airsupport', 'mounted_mg_kills', 10, 100],
-    
     // ==================== SOCIAL BADGES ====================
     ['chatty', 'Chatty', 'Send 1000 chat messages', 'dedication', 2, 'chatty', 'chat_messages', 1000, 50],
     ['silent_killer', 'Silent Killer', 'Get 50 kills without sending a single chat message', 'situational', 4, 'silent', 'silent_kills', 50, 175],

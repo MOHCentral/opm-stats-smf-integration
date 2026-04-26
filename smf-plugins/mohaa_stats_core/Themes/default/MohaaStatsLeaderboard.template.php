@@ -482,12 +482,7 @@ function template_mohaa_stats_dashboard()
         'rounds_played' => ['label' => 'Veteran', 'icon' => '??'],
         'games_finished' => ['label' => 'Ironman', 'icon' => '??'],
 
-        // F. Vehicles
-        'vehicle_enter' => ['label' => 'Pilot', 'icon' => '??'],
-        'turret_enter' => ['label' => 'Gunner', 'icon' => '??'],
-        'vehicle_kills' => ['label' => 'Saboteur', 'icon' => '??'],
-
-        // G. Social
+        // F. Social
         'chat_msgs' => ['label' => 'Chatterbox', 'icon' => '??'],
         'spectating' => ['label' => 'Spectator', 'icon' => '??'],
         'doors_opened' => ['label' => 'Door Monitor', 'icon' => '??'],

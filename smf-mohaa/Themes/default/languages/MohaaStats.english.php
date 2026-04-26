@@ -294,13 +294,11 @@ $txt['mohaa_clutches'] = 'Clutches';
 $txt['mohaa_revenge_kills'] = 'Revenge Kills';
 $txt['mohaa_movement_profile'] = 'Movement Profile';
 $txt['mohaa_distance_traveled'] = 'Distance Traveled';
-$txt['mohaa_prone_time'] = 'Prone Time';
 $txt['mohaa_camping_time'] = 'Camping Time';
 $txt['mohaa_jumps'] = 'Jumps';
 $txt['mohaa_stance_distribution'] = 'Stance Kill Distribution';
 $txt['mohaa_standing'] = 'Standing';
 $txt['mohaa_crouching'] = 'Crouching';
-$txt['mohaa_prone'] = 'Prone';
 $txt['mohaa_rivals'] = 'Rivals';
 $txt['mohaa_nemesis'] = 'Nemesis';
 $txt['mohaa_victim'] = 'Victim';
@@ -380,8 +378,6 @@ $txt['mohaa_ach_precision_strike_desc'] = 'Maintain 80% headshot ratio over 50 k
 // ============================================================
 // MOVEMENT ANALYTICS BADGES
 // ============================================================
-$txt['mohaa_ach_grass_snake'] = 'Grass Snake';
-$txt['mohaa_ach_grass_snake_desc'] = 'Get 10 kills while prone in a single match';
 $txt['mohaa_ach_the_rabbit'] = 'The Rabbit';
 $txt['mohaa_ach_the_rabbit_desc'] = 'Execute 500 jumps in a single match';
 $txt['mohaa_ach_the_statue'] = 'The Statue';
@@ -396,8 +392,6 @@ $txt['mohaa_ach_bunny_hopper'] = 'Bunny Hopper';
 $txt['mohaa_ach_bunny_hopper_desc'] = 'Maintain air time for 3+ seconds while killing';
 $txt['mohaa_ach_slide_master'] = 'Slide Master';
 $txt['mohaa_ach_slide_master_desc'] = 'Get 25 kills while sliding/momentum moving';
-$txt['mohaa_ach_prone_warrior'] = 'Prone Warrior';
-$txt['mohaa_ach_prone_warrior_desc'] = 'Spend 50% of a match prone and win';
 $txt['mohaa_ach_vertical_threat'] = 'Vertical Threat';
 $txt['mohaa_ach_vertical_threat_desc'] = 'Get kills from 3 different elevation levels in one life';
 
@@ -434,8 +428,6 @@ $txt['mohaa_ach_buzzer_beater'] = 'Buzzer Beater';
 $txt['mohaa_ach_buzzer_beater_desc'] = 'Defuse bomb with <0.5 seconds remaining';
 $txt['mohaa_ach_postal_service'] = 'Postal Service';
 $txt['mohaa_ach_postal_service_desc'] = 'Capture flag without taking any damage';
-$txt['mohaa_ach_designated_driver'] = 'Designated Driver';
-$txt['mohaa_ach_designated_driver_desc'] = 'Stay in a vehicle for 5+ minutes without dying';
 $txt['mohaa_ach_gate_crasher'] = 'Gate Crasher';
 $txt['mohaa_ach_gate_crasher_desc'] = 'Plant bomb within 30 seconds of round start';
 $txt['mohaa_ach_last_stand'] = 'Last Stand';

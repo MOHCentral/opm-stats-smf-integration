@@ -107,7 +107,6 @@ $achievements = [
     ['air_mail', 'Air Mail', 'Kill an enemy while both of you are mid-air', 'humiliation', 4, 'airshot', 'midair_kill', 1, 100],
     ['denied', 'DENIED!', 'Kill an enemy who was reloading', 'humiliation', 4, 'denied', 'reload_kills', 25, 50],
     ['spawn_camper', 'Spawn Camper', 'Get 25 spawn kills (shame on you)', 'humiliation', 4, 'camper', 'spawn_kills', 25, 25],
-    ['prone_warrior', 'Prone Warrior', 'Get 100 kills while prone', 'humiliation', 4, 'prone', 'prone_kills', 100, 50],
     ['the_acrobat', 'The Acrobat', 'Get 25 kills while jumping', 'humiliation', 4, 'jump', 'jump_kills', 25, 75],
     ['blind_fire', 'Blind Fire', 'Kill an enemy while flashbanged', 'humiliation', 4, 'blind', 'flash_kills', 5, 75],
     ['last_breath', 'Last Breath', 'Get 10 kills with less than 5 HP', 'humiliation', 4, 'lowHP', 'low_hp_kills', 10, 100],
@@ -162,7 +161,6 @@ $achievements = [
     ['precision_strike', 'Precision Strike', 'Maintain 80% headshot ratio over 50 kills', 'hitbox', 6, 'precision', 'headshot_ratio_sustained', 80, 400],
     
     // ==================== MOVEMENT ANALYTICS ====================
-    ['grass_snake', 'Grass Snake', 'Get 10 kills while prone in a single match', 'movement', 3, 'snake', 'prone_kills_match', 10, 100],
     ['the_rabbit', 'The Rabbit', 'Execute 500 jumps in a single match', 'movement', 2, 'rabbit', 'jumps_match', 500, 75],
     ['the_statue', 'The Statue', 'Win a round without moving (0 distance traveled)', 'movement', 5, 'statue', 'stationary_round_win', 1, 300],
     ['air_jordan', 'Air Jordan', 'Get a kill while you are mid-air (Z velocity > 100)', 'movement', 4, 'airjordan', 'airborne_kills', 1, 150],
@@ -170,7 +168,6 @@ $achievements = [
     ['marathon_distance', 'Marathon Man', 'Travel 42,195 units in a single match (marathon)', 'movement', 3, 'marathon', 'distance_match', 42195, 100],
     ['bunny_hopper', 'Bunny Hopper', 'Maintain air time for 3+ seconds while killing', 'movement', 5, 'bunny', 'extended_air_kill', 1, 200],
     ['slide_master', 'Slide Master', 'Get 25 kills while sliding/momentum moving', 'movement', 4, 'slide', 'momentum_kills', 25, 150],
-    ['prone_warrior', 'Prone Warrior', 'Spend 50% of a match prone and win', 'movement', 3, 'prone', 'prone_time_win', 50, 100],
     ['vertical_threat', 'Vertical Threat', 'Get kills from 3 different elevation levels in one life', 'movement', 4, 'vertical', 'elevation_kills_life', 3, 125],
     
     // ==================== ADVANCED WEAPON BADGES ====================
@@ -189,7 +186,6 @@ $achievements = [
     ['ninja_defuse', 'Ninja Defuse', 'Defuse bomb with 3+ enemies still alive nearby', 'objective', 5, 'ninja', 'ninja_defuses_alive', 1, 300],
     ['buzzer_beater', 'Buzzer Beater', 'Defuse bomb with <0.5 seconds remaining', 'objective', 5, 'buzzer', 'clutch_defuses', 1, 250],
     ['postal_service', 'Postal Service', 'Capture flag without taking any damage', 'objective', 4, 'postal', 'clean_flag_caps', 1, 175],
-    ['designated_driver', 'Designated Driver', 'Stay in a vehicle for 5+ minutes without dying', 'objective', 3, 'driver', 'vehicle_time', 300, 100],
     ['gate_crasher', 'Gate Crasher', 'Plant bomb within 30 seconds of round start', 'objective', 4, 'gatecrasher', 'fast_plants', 10, 150],
     ['last_stand', 'Last Stand', 'Win a 1v4+ clutch situation', 'objective', 6, 'laststand', 'clutch_1v4', 1, 400],
     ['objective_whore', 'Objective Specialist', 'Complete 100 objective actions', 'objective', 4, 'objective', 'total_objectives', 100, 175],

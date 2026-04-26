@@ -1256,8 +1256,6 @@ function template_war_room_objectives_content($player): string
 
 function template_war_room_interaction_content($player) {
     $chat = $player['chat_messages'] ?? 0;
-    $vUses = $player['vehicle_uses'] ?? 0;
-    $tUses = $player['turret_uses'] ?? 0;
     
     // Pickups list
     $pickupsHtml = '';
@@ -1286,20 +1284,6 @@ function template_war_room_interaction_content($player) {
             <div style="text-align: center; padding: 20px;">
                 <div style="font-size: 2.5em; font-weight: bold; color: #9c27b0;">'.number_format($chat).'</div>
                 <div style="opacity: 0.7;">Messages Sent</div>
-            </div>
-        </div>
-        
-        <div class="windowbg stat-card">
-            <h3>🚙 Vehicle & Turret</h3>
-            <div style="display: flex; justify-content: space-around; padding: 15px;">
-                <div style="text-align: center;">
-                    <div style="font-size: 2em; font-weight: bold; color: #ff9800;">'.number_format($vUses).'</div>
-                    <div style="opacity: 0.7;">Vehicles</div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 2em; font-weight: bold; color: #607d8b;">'.number_format($tUses).'</div>
-                    <div style="opacity: 0.7;">Turrets</div>
-                </div>
             </div>
         </div>
         
