@@ -40,10 +40,10 @@ if (strpos($uri, '/api/v1/stats/leaderboard/cards') !== false) {
     response(['cards' => [['title' => 'Top Killer', 'player' => 'TestPlayer']]]);
 }
 if (strpos($uri, '/api/v1/stats/leaderboard/global') !== false) {
-    response(['players' => [], 'total' => 0, 'page' => 0]);
+    response(['players' => [], 'total' => '0', 'page' => '0']);
 }
 if (strpos($uri, '/api/v1/stats/global') !== false) {
-    response(['total_kills' => 1000, 'total_players' => 50]);
+    response(['total_kills' => '1000', 'total_players' => '50']);
 }
 
 // Player Stats

@@ -17,7 +17,8 @@ class MohaaStatsAPIClient
     public function __construct()
     {
         global $modSettings;
-        $this->baseUrl = $modSettings['mohaa_stats_api_url'] ?? 'http://localhost:8080';
+        $envApiUrl = getenv('MOHAA_API_URL') ?: null;
+        $this->baseUrl = $envApiUrl ?? $modSettings['mohaa_stats_api_url'] ?? 'http://localhost:8080';
         $this->serverToken = $modSettings['mohaa_stats_server_token'] ?? '';
         $this->cacheDuration = (int)($modSettings['mohaa_stats_cache_duration'] ?? 60);
         $this->timeout = (int)($modSettings['mohaa_stats_api_timeout'] ?? 3);
@@ -45,7 +46,7 @@ class MohaaStatsAPIClient
                 CURLOPT_TIMEOUT => $this->timeout, CURLOPT_CONNECTTIMEOUT => 2,
                 CURLOPT_HTTPHEADER => ['Accept: application/json', 'X-Server-Token: ' . $this->serverToken],
             ]);
-            $handles[$key] = ['handle' => $ch, 'url' => $url, 'cacheKey' => $cacheKey];
+            $handles[$key] = ['handle' => $ch, 'url' => $url, 'cacheKey' => $cacheKey, 'endpoint' => $endpoint];
             curl_multi_add_handle($mh, $ch);
         }
         
@@ -58,8 +59,8 @@ class MohaaStatsAPIClient
                 $httpCode = curl_getinfo($info['handle'], CURLINFO_HTTP_CODE);
                 if ($httpCode === 200 && $response !== false) {
                     $data = json_decode($response, true);
-                    if (is_array($data)) {
-                        $data = $this->_validateAndCast($data);
+                    if ($data !== null) {
+                        $data = $this->_castResponse($data, $info['endpoint']);
                     }
                     $results[$key] = $data;
                     cache_put_data($info['cacheKey'], $data, $this->cacheDuration);
@@ -91,8 +92,8 @@ class MohaaStatsAPIClient
         curl_close($ch);
         if ($httpCode !== 200 || $response === false) return null;
         $data = json_decode($response, true);
-        if (is_array($data)) {
-            $data = $this->_validateAndCast($data);
+        if ($data !== null) {
+            $data = $this->_castResponse($data, $endpoint);
         }
         cache_put_data($cacheKey, $data, $this->cacheDuration);
         return $data;
@@ -112,8 +113,8 @@ class MohaaStatsAPIClient
         curl_close($ch);
         if ($httpCode < 200 || $httpCode >= 300 || $response === false) return null;
         $data = json_decode($response, true);
-        if (is_array($data)) {
-            $data = $this->_validateAndCast($data);
+        if ($data !== null) {
+            $data = $this->_castResponse($data, $endpoint);
         }
         return $data;
     }
@@ -133,12 +134,13 @@ class MohaaStatsAPIClient
         curl_close($ch);
         if ($httpCode < 200 || $httpCode >= 300 || $response === false) return null;
         $data = json_decode($response, true);
-        if (is_array($data)) {
-            $data = $this->_validateAndCast($data);
+        if ($data !== null) {
+            $data = $this->_castResponse($data, $endpoint);
         }
         return $data;
     }
     
+    // ... public methods ...
     public function clearCache(): void { clean_cache('mohaa_api_'); }
     public function getGlobalStats(): ?array { return $this->get('/stats/global'); }
     public function getLeaderboard(string $stat = 'kills', int $limit = 25, int $offset = 0, string $period = 'all'): ?array { return $this->get('/stats/leaderboard/global', ['stat'=>$stat,'limit'=>$limit,'offset'=>$offset,'period'=>$period]); }
@@ -192,15 +194,56 @@ class MohaaStatsAPIClient
     public function getHeadToHead(string $guid1, string $guid2): ?array { return []; }
     public function getLeaderboardCards(): ?array { return $this->get('/stats/leaderboard/cards'); }
 
-    private function _validateAndCast(array $data): array
+    private function _castResponse(mixed $data, string $endpoint): mixed
     {
+        if (!is_array($data)) return $data;
+        $schema = $this->getEndpointSchema($endpoint);
+        if (empty($schema)) return $this->_validateAndCastOld($data); // Fallback to old method for safety if schema missing
+        return $this->_applySchema($data, $schema);
+    }
+
+    private function _applySchema(mixed $data, mixed $schema): mixed
+    {
+        if (!is_array($data)) {
+            // Primitive casting
+            if ($schema === 'int') return (int)$data;
+            if ($schema === 'float') return (float)$data;
+            if ($schema === 'bool') return (bool)$data;
+            if ($schema === 'string') return (string)$data;
+            return $data; // Unknown type or null
+        }
+
+        if (is_array($schema) && isset($schema['_type']) && $schema['_type'] === 'array') {
+             // List of items
+             $itemSchema = $schema['_item'] ?? null;
+             foreach ($data as $k => $v) {
+                 $data[$k] = $this->_applySchema($v, $itemSchema);
+             }
+             return $data;
+        }
+
+        // Associative array (Object)
+        if (is_array($schema)) {
+            foreach ($data as $k => $v) {
+                if (isset($schema[$k])) {
+                    $data[$k] = $this->_applySchema($v, $schema[$k]);
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    private function _validateAndCastOld(array $data): array
+    {
+        // Kept as fallback for undefined schemas
         $intKeys = [
             'kills', 'deaths', 'count', 'limit', 'offset', 'total', 'page',
             'rank', 'score', 'wins', 'losses', 'draws', 'shots', 'hits', 'headshots',
             'rounds', 'time_played', 'assist', 'assists', 'suicides', 'team_kills',
             'expires_in', 'ttl', 'forum_user_id', 'cache_time', 'start_time', 'end_time',
             'points', 'rounds_played', 'flags_captured', 'obj_returned', 'obj_stolen',
-            'ip_id', 'approval_id', 'id'
+            'ip_id', 'approval_id' // REMOVED 'id'
         ];
         $floatKeys = [
             'accuracy', 'kdr', 'wl_ratio', 'kd_ratio', 'damage', 'percent',
@@ -210,7 +253,7 @@ class MohaaStatsAPIClient
 
         foreach ($data as $key => $value) {
             if (is_array($value)) {
-                $data[$key] = $this->_validateAndCast($value);
+                $data[$key] = $this->_validateAndCastOld($value);
             } elseif (in_array($key, $intKeys, true) && is_numeric($value)) {
                 $data[$key] = (int)$value;
             } elseif (in_array($key, $floatKeys, true) && is_numeric($value)) {
@@ -220,6 +263,49 @@ class MohaaStatsAPIClient
             }
         }
         return $data;
+    }
+
+    private function getEndpointSchema(string $endpoint): array
+    {
+        // Schemas
+        $playerStats = [
+            'kills'=>'int', 'deaths'=>'int', 'kdr'=>'float', 'accuracy'=>'float', 'headshots'=>'int',
+            'wins'=>'int', 'losses'=>'int', 'wl_ratio'=>'float', 'rounds'=>'int', 'time_played'=>'int',
+            'spm'=>'float', 'kpm'=>'float', 'is_online'=>'bool', 'rank'=>'int', 'score'=>'int',
+            'id'=>'string', 'name'=>'string', 'guid'=>'string'
+        ];
+        $leaderboard = [
+            'total'=>'int', 'page'=>'int', 'limit'=>'int', 'offset'=>'int',
+            'players'=>['_type'=>'array', '_item'=>$playerStats]
+        ];
+
+        // Pattern Matching
+        if (preg_match('#^/stats/global$#', $endpoint)) return ['total_kills'=>'int', 'total_players'=>'int', 'total_matches'=>'int'];
+        if (preg_match('#^/stats/leaderboard/global#', $endpoint)) return $leaderboard;
+        if (preg_match('#^/stats/player/[^/]+$#', $endpoint)) return $playerStats;
+        if (preg_match('#^/stats/player/[^/]+/performance#', $endpoint)) return [
+            'spm'=>'float', 'kpm'=>'float', 'kd_ratio'=>'float', 'win_loss_ratio'=>'float',
+            'points'=>'int', 'rounds_played'=>'int', 'is_vip'=>'bool'
+        ];
+        if (preg_match('#^/stats/matches$#', $endpoint)) return ['total'=>'int', 'list'=>['_type'=>'array', '_item'=>['id'=>'string', 'map_name'=>'string', 'server_name'=>'string', 'timestamp'=>'string']]];
+        if (preg_match('#^/stats/match/[^/]+$#', $endpoint)) return ['info'=>['id'=>'string', 'map_name'=>'string', 'duration'=>'int']];
+        if (preg_match('#^/stats/live/matches$#', $endpoint)) return ['_type'=>'array', '_item'=>['id'=>'string', 'map_name'=>'string', 'players_count'=>'int']];
+        if (preg_match('#^/stats/maps$#', $endpoint)) return ['_type'=>'array', '_item'=>['id'=>'string', 'name'=>'string', 'count'=>'int']];
+        if (preg_match('#^/stats/map/[^/]+$#', $endpoint)) return ['id'=>'string', 'name'=>'string', 'count'=>'int'];
+        if (preg_match('#^/stats/weapons$#', $endpoint)) return ['_type'=>'array', '_item'=>['id'=>'string', 'name'=>'string', 'kills'=>'int']];
+        if (preg_match('#^/stats/weapon/[^/]+$#', $endpoint)) return ['id'=>'string', 'name'=>'string', 'kills'=>'int'];
+
+        if (preg_match('#^/auth/trusted-ips/[0-9]+#', $endpoint)) return [
+             'trusted_ips' => ['_type'=>'array', '_item'=>['id'=>'int', 'ip_address'=>'string', 'last_used_at'=>'string']]
+        ];
+        if (preg_match('#^/auth/pending-ips/[0-9]+#', $endpoint)) return [
+             'pending_ips' => ['_type'=>'array', '_item'=>['id'=>'int', 'ip_address'=>'string', 'requested_at'=>'string']]
+        ];
+        if (preg_match('#^/auth/history/[0-9]+#', $endpoint)) return [
+             'history' => ['_type'=>'array', '_item'=>['attempt_at'=>'string', 'success'=>'bool']]
+        ];
+
+        return [];
     }
 }
 
