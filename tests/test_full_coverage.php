@@ -139,7 +139,14 @@ assertNull($res404, "Result for ERROR_404");
 
 echo "Testing Invalid JSON...\n";
 $resJson = $api->getPlayerStats('ERROR_JSON');
-assertNull($resJson, "Result for ERROR_JSON");
+// With strict resilience, invalid JSON on 200 OK should return default structure, not null
+if (is_array($resJson) && isset($resJson['kills']) && $resJson['kills'] === 0) {
+    echo "[PASS] Result for ERROR_JSON is default structure (resilience)\n";
+    $passes++;
+} else {
+    echo "[FAIL] Result for ERROR_JSON should be default structure\n";
+    $failures++;
+}
 
 // 4. Test New Auth Methods and Stubs
 echo "\nTesting New Auth Methods...\n";
