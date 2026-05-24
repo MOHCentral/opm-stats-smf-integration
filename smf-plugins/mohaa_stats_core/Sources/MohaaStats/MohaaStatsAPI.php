@@ -7,6 +7,8 @@ declare(strict_types=1);
 if (!defined('SMF'))
     die('No direct access...');
 
+require_once(__DIR__ . '/MohaaStatsSchemas.php');
+
 class MohaaStatsAPIClient
 {
     private string $baseUrl;
@@ -45,7 +47,7 @@ class MohaaStatsAPIClient
                 CURLOPT_TIMEOUT => $this->timeout, CURLOPT_CONNECTTIMEOUT => 2,
                 CURLOPT_HTTPHEADER => ['Accept: application/json', 'X-Server-Token: ' . $this->serverToken],
             ]);
-            $handles[$key] = ['handle' => $ch, 'url' => $url, 'cacheKey' => $cacheKey];
+            $handles[$key] = ['handle' => $ch, 'url' => $url, 'cacheKey' => $cacheKey, 'schema' => $request['schema'] ?? []];
             curl_multi_add_handle($mh, $ch);
         }
         
@@ -58,12 +60,20 @@ class MohaaStatsAPIClient
                 $httpCode = curl_getinfo($info['handle'], CURLINFO_HTTP_CODE);
                 if ($httpCode === 200 && $response !== false) {
                     $data = json_decode($response, true);
-                    if (is_array($data)) {
-                        $data = $this->_validateAndCast($data);
+
+                    if (!empty($info['schema'])) {
+                        $data = $this->_validateWithSchema($data ?? [], $info['schema']);
                     }
+
                     $results[$key] = $data;
                     cache_put_data($info['cacheKey'], $data, $this->cacheDuration);
-                } else { $results[$key] = null; }
+                } else {
+                    if (!empty($info['schema'])) {
+                        $results[$key] = $this->_validateWithSchema([], $info['schema']);
+                    } else {
+                        $results[$key] = null;
+                    }
+                }
                 curl_multi_remove_handle($mh, $info['handle']);
                 curl_close($info['handle']);
             }
@@ -72,7 +82,7 @@ class MohaaStatsAPIClient
         return $results;
     }
     
-    private function get(string $endpoint, array $params = []): ?array
+    private function get(string $endpoint, array $params = [], array $schema = []): ?array
     {
         $url = $this->baseUrl . '/api/v1' . $endpoint;
         if (!empty($params)) $url .= '?' . http_build_query($params);
@@ -89,16 +99,29 @@ class MohaaStatsAPIClient
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-        if ($httpCode !== 200 || $response === false) return null;
-        $data = json_decode($response, true);
-        if (is_array($data)) {
-            $data = $this->_validateAndCast($data);
+
+        if ($httpCode !== 200 || $response === false) {
+            if (!empty($schema)) {
+                return $this->_validateWithSchema([], $schema);
+            }
+            return null;
         }
+
+        $data = json_decode($response, true);
+
+        // Strict Validation
+        if (!empty($schema)) {
+            $data = $this->_validateWithSchema($data ?? [], $schema);
+        } else if (is_array($data)) {
+            // Fallback if no schema provided, but we should always provide schema
+            // For now, return as is or log warning
+        }
+
         cache_put_data($cacheKey, $data, $this->cacheDuration);
         return $data;
     }
     
-    private function post(string $endpoint, array $data = []): ?array
+    private function post(string $endpoint, array $data = [], array $schema = []): ?array
     {
         $url = $this->baseUrl . '/api/v1' . $endpoint;
         $ch = curl_init();
@@ -110,15 +133,24 @@ class MohaaStatsAPIClient
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-        if ($httpCode < 200 || $httpCode >= 300 || $response === false) return null;
-        $data = json_decode($response, true);
-        if (is_array($data)) {
-            $data = $this->_validateAndCast($data);
+
+        if ($httpCode < 200 || $httpCode >= 300 || $response === false) {
+            if (!empty($schema)) {
+                return $this->_validateWithSchema([], $schema);
+            }
+            return null;
         }
+
+        $data = json_decode($response, true);
+
+        if (!empty($schema)) {
+            $data = $this->_validateWithSchema($data ?? [], $schema);
+        }
+
         return $data;
     }
 
-    private function delete(string $endpoint, array $data = []): ?array
+    private function delete(string $endpoint, array $data = [], array $schema = []): ?array
     {
         $url = $this->baseUrl . '/api/v1' . $endpoint;
         if (!empty($data)) $url .= '?' . http_build_query($data);
@@ -131,48 +163,57 @@ class MohaaStatsAPIClient
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-        if ($httpCode < 200 || $httpCode >= 300 || $response === false) return null;
-        $data = json_decode($response, true);
-        if (is_array($data)) {
-            $data = $this->_validateAndCast($data);
+
+        if ($httpCode < 200 || $httpCode >= 300 || $response === false) {
+            if (!empty($schema)) {
+                return $this->_validateWithSchema([], $schema);
+            }
+            return null;
         }
+
+        $data = json_decode($response, true);
+
+        if (!empty($schema)) {
+            $data = $this->_validateWithSchema($data ?? [], $schema);
+        }
+
         return $data;
     }
     
     public function clearCache(): void { clean_cache('mohaa_api_'); }
-    public function getGlobalStats(): ?array { return $this->get('/stats/global'); }
-    public function getLeaderboard(string $stat = 'kills', int $limit = 25, int $offset = 0, string $period = 'all'): ?array { return $this->get('/stats/leaderboard/global', ['stat'=>$stat,'limit'=>$limit,'offset'=>$offset,'period'=>$period]); }
-    public function getLeaderboardCount(string $stat = 'kills', string $period = 'all'): int { $data = $this->get('/stats/leaderboard/global', ['stat'=>$stat,'period'=>$period,'count_only'=>true]); return (int)($data['total'] ?? 0); }
-    public function getPlayerStats(string $guid): ?array { return $this->get('/stats/player/' . urlencode($guid)); }
-    public function getPlayerDeepStats(string $guid): ?array { return $this->get('/stats/player/' . urlencode($guid) . '/deep'); }
-    public function getPlayerWeapons(string $guid): ?array { return $this->get('/stats/player/' . urlencode($guid) . '/weapons'); }
-    public function getPlayerMatches(string $guid, int $limit = 10, int $offset = 0): ?array { return $this->get('/stats/player/' . urlencode($guid) . '/matches', ['limit'=>$limit,'offset'=>$offset]); }
-    public function getPlayerAchievements(string $guid): ?array { return $this->get('/achievements/player/' . urlencode($guid)); }
-    public function getRecentMatches(int $limit = 20, int $offset = 0): ?array { return $this->get('/stats/matches', ['limit'=>$limit,'offset'=>$offset]); }
-    public function getMatchCount(): int { $data = $this->get('/stats/matches', ['count_only'=>true]); return (int)($data['total'] ?? 0); }
-    public function getMatchDetails(string $matchId): ?array { return $this->get('/stats/match/' . urlencode($matchId)); }
-    public function getLiveMatches(): ?array { $orig = $this->cacheDuration; $this->cacheDuration = 10; $data = $this->get('/stats/live/matches'); $this->cacheDuration = $orig; return $data; }
-    public function getMapStats(): ?array { return $this->get('/stats/maps'); }
-    public function getMapDetails(string $mapId): ?array { return $this->get('/stats/map/' . urlencode($mapId)); }
-    public function getMapHeatmap(string $mapId, string $type = 'kills'): ?array { return $this->get('/stats/map/' . urlencode($mapId) . '/heatmap', ['type'=>$type]); }
-    public function getMapsList(): ?array { return $this->get('/stats/maps/list'); }
-    public function getWeaponsList(): ?array { return $this->get('/stats/weapons/list'); }
-    public function getWeaponStats(string $weaponId): ?array { return $this->get('/stats/weapon/' . urlencode($weaponId)); }
-    public function getWeaponLeaderboard(string $weaponId, int $limit = 25): ?array { return $this->get('/stats/weapon/' . urlencode($weaponId) . '/leaderboard', ['limit'=>$limit]); }
-    public function getMapLeaderboard(string $mapId, int $limit = 25): ?array { return $this->get('/stats/map/' . urlencode($mapId) . '/leaderboard', ['limit'=>$limit]); }
-    public function getMatchHeatmap(string $matchId, string $type = 'kills'): ?array { return $this->get('/stats/match/' . urlencode($matchId) . '/heatmap', ['type'=>$type]); }
-    public function initClaim(int $forumUserId): ?array { return $this->post('/auth/claim/init', ['forum_user_id'=>$forumUserId]); }
-    public function initDeviceAuth(int $forumUserId, bool $force = false): ?array { return $this->post('/auth/device', ['forum_user_id'=>$forumUserId, 'force'=>$force]); }
+    public function getGlobalStats(): ?array { return $this->get('/stats/global', [], MohaaStatsSchemas::GLOBAL_STATS); }
+    public function getLeaderboard(string $stat = 'kills', int $limit = 25, int $offset = 0, string $period = 'all'): ?array { return $this->get('/stats/leaderboard/global', ['stat'=>$stat,'limit'=>$limit,'offset'=>$offset,'period'=>$period], MohaaStatsSchemas::LEADERBOARD_RESPONSE); }
+    public function getLeaderboardCount(string $stat = 'kills', string $period = 'all'): int { $data = $this->get('/stats/leaderboard/global', ['stat'=>$stat,'period'=>$period,'count_only'=>true], MohaaStatsSchemas::LEADERBOARD_RESPONSE); return (int)($data['total'] ?? 0); }
+    public function getPlayerStats(string $guid): ?array { return $this->get('/stats/player/' . urlencode($guid), [], MohaaStatsSchemas::PLAYER_BASIC); }
+    public function getPlayerDeepStats(string $guid): ?array { return $this->get('/stats/player/' . urlencode($guid) . '/deep', [], MohaaStatsSchemas::PLAYER_DEEP); }
+    public function getPlayerWeapons(string $guid): ?array { return $this->get('/stats/player/' . urlencode($guid) . '/weapons', [], ['type' => 'array_of_WEAPON_BASIC']); }
+    public function getPlayerMatches(string $guid, int $limit = 10, int $offset = 0): ?array { return $this->get('/stats/player/' . urlencode($guid) . '/matches', ['limit'=>$limit,'offset'=>$offset], MohaaStatsSchemas::MATCH_LIST); }
+    public function getPlayerAchievements(string $guid): ?array { return $this->get('/achievements/player/' . urlencode($guid), [], ['type' => 'array']); }
+    public function getRecentMatches(int $limit = 20, int $offset = 0): ?array { return $this->get('/stats/matches', ['limit'=>$limit,'offset'=>$offset], MohaaStatsSchemas::MATCH_LIST); }
+    public function getMatchCount(): int { $data = $this->get('/stats/matches', ['count_only'=>true], MohaaStatsSchemas::MATCH_LIST); return (int)($data['total'] ?? 0); }
+    public function getMatchDetails(string $matchId): ?array { return $this->get('/stats/match/' . urlencode($matchId), [], MohaaStatsSchemas::MATCH_DETAIL); }
+    public function getLiveMatches(): ?array { $orig = $this->cacheDuration; $this->cacheDuration = 10; $data = $this->get('/stats/live/matches', [], ['type' => 'array_of_LIVE_MATCH']); $this->cacheDuration = $orig; return $data; }
+    public function getMapStats(): ?array { return $this->get('/stats/maps', [], ['type' => 'array_of_MAP_BASIC']); }
+    public function getMapDetails(string $mapId): ?array { return $this->get('/stats/map/' . urlencode($mapId), [], MohaaStatsSchemas::MAP_DETAIL); }
+    public function getMapHeatmap(string $mapId, string $type = 'kills'): ?array { return $this->get('/stats/map/' . urlencode($mapId) . '/heatmap', ['type'=>$type], ['type' => 'array_of_HEATMAP_POINT']); }
+    public function getMapsList(): ?array { return $this->get('/stats/maps/list', [], ['type' => 'array_of_MAP_BASIC']); }
+    public function getWeaponsList(): ?array { return $this->get('/stats/weapons/list', [], ['type' => 'array_of_WEAPON_BASIC']); }
+    public function getWeaponStats(string $weaponId): ?array { return $this->get('/stats/weapon/' . urlencode($weaponId), [], MohaaStatsSchemas::WEAPON_BASIC); }
+    public function getWeaponLeaderboard(string $weaponId, int $limit = 25): ?array { return $this->get('/stats/weapon/' . urlencode($weaponId) . '/leaderboard', ['limit'=>$limit], MohaaStatsSchemas::LEADERBOARD_RESPONSE); }
+    public function getMapLeaderboard(string $mapId, int $limit = 25): ?array { return $this->get('/stats/map/' . urlencode($mapId) . '/leaderboard', ['limit'=>$limit], MohaaStatsSchemas::LEADERBOARD_RESPONSE); }
+    public function getMatchHeatmap(string $matchId, string $type = 'kills'): ?array { return $this->get('/stats/match/' . urlencode($matchId) . '/heatmap', ['type'=>$type], ['type' => 'array_of_HEATMAP_POINT']); }
+    public function initClaim(int $forumUserId): ?array { return $this->post('/auth/claim/init', ['forum_user_id'=>$forumUserId], MohaaStatsSchemas::AUTH_INIT); }
+    public function initDeviceAuth(int $forumUserId, bool $force = false): ?array { return $this->post('/auth/device', ['forum_user_id'=>$forumUserId, 'force'=>$force], MohaaStatsSchemas::AUTH_INIT); }
 
-    public function getLoginHistory(int $forumUserId): ?array { return $this->get('/auth/history/' . $forumUserId); }
-    public function getTrustedIPs(int $forumUserId): ?array { return $this->get('/auth/trusted-ips/' . $forumUserId); }
-    public function getPendingIPApprovals(int $forumUserId): ?array { return $this->get('/auth/pending-ips/' . $forumUserId); }
-    public function deleteTrustedIP(int $forumUserId, int $ipId): ?array { return $this->delete('/auth/trusted-ip/' . $ipId, ['forum_user_id'=>$forumUserId]); }
-    public function resolvePendingIP(int $forumUserId, int $approvalId, string $action): ?array { return $this->post('/auth/pending-ip/resolve', ['forum_user_id'=>$forumUserId, 'approval_id'=>$approvalId, 'action'=>$action]); }
+    public function getLoginHistory(int $forumUserId): ?array { return $this->get('/auth/history/' . $forumUserId, [], MohaaStatsSchemas::LOGIN_HISTORY_RESPONSE); }
+    public function getTrustedIPs(int $forumUserId): ?array { return $this->get('/auth/trusted-ips/' . $forumUserId, [], MohaaStatsSchemas::TRUSTED_IPS_RESPONSE); }
+    public function getPendingIPApprovals(int $forumUserId): ?array { return $this->get('/auth/pending-ips/' . $forumUserId, [], MohaaStatsSchemas::PENDING_IPS_RESPONSE); }
+    public function deleteTrustedIP(int $forumUserId, int $ipId): ?array { return $this->delete('/auth/trusted-ip/' . $ipId, ['forum_user_id'=>$forumUserId], MohaaStatsSchemas::GENERIC_SUCCESS); }
+    public function resolvePendingIP(int $forumUserId, int $approvalId, string $action): ?array { return $this->post('/auth/pending-ip/resolve', ['forum_user_id'=>$forumUserId, 'approval_id'=>$approvalId, 'action'=>$action], MohaaStatsSchemas::GENERIC_SUCCESS); }
 
     // Server Stats
-    public function getGlobalActivity(): ?array { return $this->get('/stats/global/activity'); }
-    public function getMapPopularity(): ?array { return $this->get('/stats/maps/popularity'); }
+    public function getGlobalActivity(): ?array { return $this->get('/stats/global/activity', [], ['activity' => ['type' => 'array']]); }
+    public function getMapPopularity(): ?array { return $this->get('/stats/maps/popularity', [], ['type' => 'array_of_MAP_BASIC']); }
     
     // Stubs
     public function getAchievements(): ?array { return $this->get('/achievements/'); }
@@ -184,42 +225,17 @@ class MohaaStatsAPIClient
     public function getPlayerRank(string $guid): ?int { return null; }
     public function getPlayerPerformance(string $guid, int $days): ?array { return $this->get('/stats/player/' . urlencode($guid) . '/performance'); }
     public function getPlayerHistory(string $guid): ?array { return $this->get('/stats/player/' . urlencode($guid) . '/performance'); }
-    public function getPlayerPlaystyle(string $guid): ?array { return $this->get('/stats/player/' . urlencode($guid) . '/playstyle'); }
-    public function getMatchReport(string $matchId): ?array { return $this->get('/stats/match/' . urlencode($matchId) . '/advanced'); }
+    public function getPlayerPlaystyle(string $guid): ?array { return $this->get('/stats/player/' . urlencode($guid) . '/playstyle', [], MohaaStatsSchemas::PLAYER_PLAYSTYLE); }
+    public function getMatchReport(string $matchId): ?array { return $this->get('/stats/match/' . urlencode($matchId) . '/advanced', [], MohaaStatsSchemas::MATCH_DETAIL); }
 
     public function getPlayerMapStats(string $guid): ?array { return []; }
     public function getPlayerComparisons(string $guid): ?array { return []; }
     public function getHeadToHead(string $guid1, string $guid2): ?array { return []; }
     public function getLeaderboardCards(): ?array { return $this->get('/stats/leaderboard/cards'); }
 
-    private function _validateAndCast(array $data): array
+    private function _validateWithSchema(array $data, array $schema): array
     {
-        $intKeys = [
-            'kills', 'deaths', 'count', 'limit', 'offset', 'total', 'page',
-            'rank', 'score', 'wins', 'losses', 'draws', 'shots', 'hits', 'headshots',
-            'rounds', 'time_played', 'assist', 'assists', 'suicides', 'team_kills',
-            'expires_in', 'ttl', 'forum_user_id', 'cache_time', 'start_time', 'end_time',
-            'points', 'rounds_played', 'flags_captured', 'obj_returned', 'obj_stolen',
-            'ip_id', 'approval_id', 'id'
-        ];
-        $floatKeys = [
-            'accuracy', 'kdr', 'wl_ratio', 'kd_ratio', 'damage', 'percent',
-            'spm', 'kpm', 'win_loss_ratio', 'score_per_minute'
-        ];
-        $boolKeys = ['is_active', 'success', 'count_only', 'online', 'is_online', 'is_vip', 'verified'];
-
-        foreach ($data as $key => $value) {
-            if (is_array($value)) {
-                $data[$key] = $this->_validateAndCast($value);
-            } elseif (in_array($key, $intKeys, true) && is_numeric($value)) {
-                $data[$key] = (int)$value;
-            } elseif (in_array($key, $floatKeys, true) && is_numeric($value)) {
-                $data[$key] = (float)$value;
-            } elseif (in_array($key, $boolKeys, true)) {
-                $data[$key] = (bool)$value;
-            }
-        }
-        return $data;
+        return MohaaStatsSchemas::validate($data, $schema);
     }
 }
 

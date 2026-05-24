@@ -51,3 +51,15 @@ if ($wStats && isset($wStats['kills'])) {
 }
 
 echo "Done.\n";
+
+// Test 4: Resilience
+echo "\n--- Test 4: Resilience ---\n";
+$match = $api->getMatchDetails('ERROR_404');
+if ($match !== null && is_array($match) && isset($match['info']['map_name'])) {
+    echo "PASS: Resilience (404 returns default structure)\n";
+    if ($match['info']['map_name'] === 'Unknown') echo "PASS: Default value correct\n";
+    else echo "FAIL: Default value incorrect (got {$match['info']['map_name']})\n";
+} else {
+    echo "FAIL: Resilience (returned null or invalid)\n";
+    var_dump($match);
+}
